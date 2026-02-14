@@ -82,7 +82,7 @@ int main() {
 	server_addr_in.sin_addr.s_addr = inet_addr(ADDRESS);
 	server_addr_in.sin_port = htons(PORT);
 
-	struct sockaddr *server_addr = (struct sockaddr *)&server_addr;
+	struct sockaddr *server_addr = (struct sockaddr *)&server_addr_in;
 
 	// bind server to the port
 	if (bind(serverfd, server_addr, addrlen) < 0) {
