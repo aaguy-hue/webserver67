@@ -26,8 +26,8 @@ int main() {
 
 	struct sockaddr *client_addr = (struct sockaddr *)&client_addr_in;
 
-	int connected_socket = connect(clientfd, client_addr, addrlen);
-	if (connected_socket < 0) {
+	// connects the socket clientfd to the specified address
+	if (connect(clientfd, client_addr, addrlen) < 0) {
 		perror("[-] Failed to connect to server socket!");
 		exit(EXIT_FAILURE);
 	}
