@@ -7,6 +7,8 @@
 #include <stdbool.h>
 #include <string.h>
 
+#define _GNU_SOURCE
+
 // an explanation of each include:
 // stdio is obviously io
 //
@@ -36,8 +38,9 @@
 
 // rfs 9110 is the modern rfc defining the http spec
 
-#define ADDRESS "127.0.0.1"
-#define PORT 8067
+static const char *ADDRESS = "127.0.0.1";
+static const int PORT = 8067;
+static const int BACKLOG_LENGTH = 2;
 
 int main() {
 	char* msg = "Hello! This is the server.";
@@ -65,25 +68,50 @@ int main() {
 	int enable = true;
 	if (setsockopt(serverfd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT,
 				&enable, sizeof(enable)) < 0) {
-		perror("[-] setting socket options failed");
+		perror("[-] setting server socket options failed");
 		exit(EXIT_FAILURE);
 	}
-	printf("[+] set socket options!\n");
+	printf("[+] set server socket options!\n");
 
-	struct sockaddr_in server_addr;
-	socklen_t addrlen = sizeof(server_addr);
-	memset(&server_addr, 0, addrlen);
-	server_addr.sin_family = AF_INET;
-	server_addr.sin_addr.s_addr = INADDR_ANY; // this is just 0.0.0.0
-	server_addr.sin_addr.s_addr = inet_addr(ADDRESS);
-	server_addr.sin_port = htons(PORT);
-	if (bind(serverfd, (struct sockaddr *)&server_addr, addrlen) < 0) {
-		char errorstr[200];
-		sprintf(errorstr, "[-] failed to bind socket to %s:%d", ADDRESS, PORT);
+	// set the server's address
+	struct sockaddr_in server_addr_in;
+	socklen_t addrlen = sizeof(server_addr_in);
+	memset(&server_addr_in, 0, addrlen);
+	server_addr_in.sin_family = AF_INET;
+	//server_addr_in.sin_addr.s_addr = INADDR_ANY; // this is just 0.0.0.0
+	server_addr_in.sin_addr.s_addr = inet_addr(ADDRESS);
+	server_addr_in.sin_port = htons(PORT);
+
+	struct sockaddr *server_addr = (struct sockaddr *)&server_addr;
+
+	// bind server to the port
+	if (bind(serverfd, server_addr, addrlen) < 0) {
+		char errorstr[100];
+		sprintf(errorstr, "[-] failed to bind server socket to %s:%d", ADDRESS, PORT);
 		perror(errorstr);
 		exit(EXIT_FAILURE);
 	}
-	char successtr[200];
-	sprintf(successtr, "[+] succesfully bound socket to %s:%d", ADDRESS, PORT);
+	char successtr[100];
+	sprintf(successtr, "[+] succesfully bound server socket to %s:%d\n", ADDRESS, PORT);
 	printf(successtr);
+
+	// listen() marks the socket refered to by sockfd as a passive listening
+	// port, which is what you'd want on a server
+	// it allows us to use accept() later
+	// 2nd param is backlog, which is the max length of the queue of pending
+	// connections for sockfd
+	if (listen(serverfd, BACKLOG_LENGTH) < 0) {
+		perror("[-] Failed to set server socket to listen for connections!");
+	}
+	printf("[+] Server socket is now listening for connections!\n");
+
+	// accept() extracts the first connection in the queue from the socket
+	// it creates a new socket and returns that (it doesn't modify the original)
+	// accept4() is the same thing but it has a 4th parameter, flags, which is
+	// useful in multithreaded code bc it lets you have nonblocking calls and
+	// enhanced security
+	// if you specify no flags then accept4() is the same as accept()
+	// accept4() is a nonstandard extension and isn't POSIX-compliant
+	int connected_socketfd = accept(serverfd, server_addr, &addrlen);
+	printf("[+] established connection with client!");
 }
