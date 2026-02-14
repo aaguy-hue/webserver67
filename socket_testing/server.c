@@ -6,6 +6,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <unistd.h>
+#include <time.h>
 
 // an explanation of each include:
 // stdio is obviously io
@@ -38,6 +39,9 @@
 //
 // unistd is explained in client.c but it just provides close() and is for
 // posix-specific things
+//
+// time.h provides sleep() on posix-compliant systems
+// annoyingly, sleep's param is in seconds on *nix systems but ms on windows
 
 
 
@@ -127,8 +131,21 @@ int main() {
 	// enhanced security
 	// if you specify no flags then accept4() is the same as accept()
 	// accept4() is a nonstandard extension and isn't POSIX-compliant
-	int connected_socketfd = accept(serverfd, server_addr, &addrlen);
+	int clientfd = accept(serverfd, server_addr, &addrlen);
 	printf("[+] Established connection with client!\n");
+
+	// send(int sockfd, const void buf[size], size_t size, int flags)
+	// here I set flags to 0 since none are relevant for this case
+	sleep(1.5);
+	char message[] = "Hello from server!";
+	int numBytes = send(clientfd, message, sizeof(message), 0);
+	if (numBytes < 0) {
+		perror("[-] Failed to send message to client!");
+		exit(EXIT_FAILURE);
+	}
+	printf("[+] Successfully sent %d bytes to the client!\n", numBytes);
+
+	sleep(3);
 
 	if (close(serverfd) < 0) {
 		perror("[-] Failed to close server socket!");
