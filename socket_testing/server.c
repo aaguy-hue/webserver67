@@ -52,8 +52,6 @@ static const int PORT = 8067;
 static const int BACKLOG_LENGTH = 2;
 
 int main() {
-	char* msg = "Hello! This is the server.";
-
 	// int socket(int domain, int socket, int protocol)
 	// AF_INET -> using ipv4
 	// AF_LOCAL -> communicating on same device, for testing rn
@@ -138,24 +136,29 @@ int main() {
 
 	// accept() extracts the first connection in the queue from the socket
 	// it creates a new socket and returns that (it doesn't modify the original)
-	// the 2nd/3rd params are the client info, but we leave that null
+	// the 2nd/3rd params are the client address, we can leave it null if we don't care
 	// accept4() is the same thing but it has a 4th parameter, flags, which is
 	// useful in multithreaded code bc it lets you have nonblocking calls and
 	// enhanced security
 	// if you specify no flags then accept4() is the same as accept()
 	// accept4() is a nonstandard extension and isn't POSIX-compliant
-	int clientfd = accept(serverfd, NULL, NULL);
+	struct sockaddr_in client_addr;
+	socklen_t addrsize = sizeof(client_addr);
+	int clientfd = accept(serverfd, (struct sockaddr *)&client_addr, &addrsize);
 	if (clientfd < 0) {
 		perror("[-] Failed to accept client connection attempt");
 		close(serverfd);
 		exit(EXIT_FAILURE);
 	}
-	printf("[+] Established connection with client!\n");
+
+	char client_ip[INET_ADDRSTRLEN];
+	inet_ntop(AF_INET, &client_addr.sin_addr, client_ip, sizeof(client_ip));
+	printf("[+] Client connected from %s:%d!\n", client_ip, ntohs(client_addr.sin_port));
 
 	// send(int sockfd, const void buf[size], size_t size, int flags)
 	// here I set flags to 0 since none are relevant for this case
 	sleep(1);
-	char message[] = "Hello from server!";
+	const char message[] = "Hello from server!";
 	int numBytes = send(clientfd, message, sizeof(message), 0);
 	if (numBytes < 0) {
 		perror("[-] Failed to send message to client!");
