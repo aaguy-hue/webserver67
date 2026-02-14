@@ -159,11 +159,18 @@ int main() {
 	int numBytes = send(clientfd, message, sizeof(message), 0);
 	if (numBytes < 0) {
 		perror("[-] Failed to send message to client!");
+		close(serverfd);
+		close(clientfd);
 		exit(EXIT_FAILURE);
 	}
 	printf("[+] Successfully sent %d bytes to the client!\n", numBytes);
 
 	sleep(3);
+
+	if (close(clientfd) < 0) {
+		perror("[-] Failed to close client socket!");
+	}
+	printf("[+] Closed client socket!\n");
 
 	if (close(serverfd) < 0) {
 		perror("[-] Failed to close server socket!");
