@@ -31,7 +31,14 @@ int main() {
 	memset(&client_addr_in, 0, addrlen);
 	client_addr_in.sin_family = AF_INET;
 	client_addr_in.sin_port = htons(SERVER_PORT);
-	client_addr_in.sin_addr.s_addr = inet_addr(SERVER_ADDR);
+	int addr_conv_ok = inet_pton(AF_INET, SERVER_ADDR, &client_addr_in.sin_addr.s_addr);
+	if (addr_conv_ok == 0) {
+		printf("[-] Invalid IP address passed into inet_pton");
+		exit(EXIT_FAILURE);
+	} else if (addr_conv_ok < 0) {
+		perror("[-] Failed to convert IP address to binary format w/ inet_pton");
+		exit(EXIT_FAILURE);
+	}
 
 	struct sockaddr *client_addr = (struct sockaddr *)&client_addr_in;
 
