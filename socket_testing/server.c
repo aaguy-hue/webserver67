@@ -3,11 +3,9 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <stdlib.h>
-#include <errno.h>
 #include <stdbool.h>
 #include <string.h>
 
-#define _GNU_SOURCE
 
 // an explanation of each include:
 // stdio is obviously io
@@ -19,6 +17,8 @@
 //
 // errno is set by certain lib functions and syscalls including setsockopt()
 // see man errno, you can run the errno <int> command to see what an error means
+// i didn't include errno though since perror will say the meaning of the value
+// set by errno
 //
 // netinet/in.h includes sockaddr_in, if I wanted sockaddr_un I'd use sys/un.h
 //
