@@ -91,7 +91,18 @@ int main() {
 	memset(&server_addr_in, 0, addrlen);
 	server_addr_in.sin_family = AF_INET;
 	//server_addr_in.sin_addr.s_addr = INADDR_ANY; // this is just 0.0.0.0
-	server_addr_in.sin_addr.s_addr = inet_addr(ADDRESS);
+	// note: i used to use inet_addr, but inet_pton is the modern version which
+	// is better bc it's thread-safe, also supports ipv6
+	// but it is less versatile in its input than inet_addr()
+	int addrok = inet_pton(AF_INET, ADDRESS, &server_addr_in.sin_addr.s_addr);
+	if (addrok == 0) {
+		printf("[-] Invalid IP address passed into inet_pton!");
+		exit(EXIT_FAILURE);
+	} else if (addrok < 0) {
+		perror("[-] Failed to convert IP address to binary with inet_pton");
+		exit(EXIT_FAILURE);
+	}
+	//server_addr_in.sin_addr.s_addr = inet_addr(ADDRESS);
 	server_addr_in.sin_port = htons(PORT);
 
 	struct sockaddr *server_addr = (struct sockaddr *)&server_addr_in;
@@ -137,7 +148,7 @@ int main() {
 
 	// send(int sockfd, const void buf[size], size_t size, int flags)
 	// here I set flags to 0 since none are relevant for this case
-	sleep(1.5);
+	sleep(1);
 	char message[] = "Hello from server!";
 	int numBytes = send(clientfd, message, sizeof(message), 0);
 	if (numBytes < 0) {
