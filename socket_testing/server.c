@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
-
+#include <unistd.h>
 
 // an explanation of each include:
 // stdio is obviously io
@@ -35,6 +35,11 @@
 // on the client, connect() connects a socket to a remote address
 // ok wait I'm just summarizing the manpage for socket(7) at this point so just
 // read that if you forgot
+//
+// unistd is explained in client.c but it just provides close() and is for
+// posix-specific things
+
+
 
 // rfs 9110 is the modern rfc defining the http spec
 
@@ -68,7 +73,10 @@ int main() {
 	int enable = true;
 	if (setsockopt(serverfd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT,
 				&enable, sizeof(enable)) < 0) {
-		perror("[-] setting server socket options failed");
+		perror("[-] Setting server socket options failed");
+		if (close(serverfd) < 0) {
+			perror("[--] Failed to close server socket!");
+		}
 		exit(EXIT_FAILURE);
 	}
 	printf("[+] set server socket options!\n");
@@ -89,6 +97,9 @@ int main() {
 		char errorstr[100];
 		sprintf(errorstr, "[-] failed to bind server socket to %s:%d", ADDRESS, PORT);
 		perror(errorstr);
+		if (close(serverfd) < 0) {
+			perror("[--] Failed to close server socket!");
+		}
 		exit(EXIT_FAILURE);
 	}
 	char successtr[100];
@@ -102,6 +113,10 @@ int main() {
 	// connections for sockfd
 	if (listen(serverfd, BACKLOG_LENGTH) < 0) {
 		perror("[-] Failed to set server socket to listen for connections!");
+		if (close(serverfd) < 0) {
+			perror("[--] Failed to close server socket!");
+		}
+		exit(EXIT_FAILURE);
 	}
 	printf("[+] Server socket is now listening for connections!\n");
 
@@ -113,5 +128,10 @@ int main() {
 	// if you specify no flags then accept4() is the same as accept()
 	// accept4() is a nonstandard extension and isn't POSIX-compliant
 	int connected_socketfd = accept(serverfd, server_addr, &addrlen);
-	printf("[+] established connection with client!");
+	printf("[+] Established connection with client!\n");
+
+	if (close(serverfd) < 0) {
+		perror("[-] Failed to close server socket!");
+	}
+	printf("[+] Closed server socket!\n");
 }
