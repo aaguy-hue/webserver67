@@ -111,7 +111,7 @@ int main() {
 	// bind server to the port
 	if (bind(serverfd, server_addr, addrlen) < 0) {
 		char errorstr[100];
-		sprintf(errorstr, "[-] failed to bind server socket to %s:%d", ADDRESS, PORT);
+		snprintf(errorstr, sizeof(errorstr), "[-] failed to bind server socket to %s:%d", ADDRESS, PORT);
 		perror(errorstr);
 		if (close(serverfd) < 0) {
 			perror("[--] Failed to close server socket!");
@@ -119,7 +119,7 @@ int main() {
 		exit(EXIT_FAILURE);
 	}
 	char successtr[100];
-	sprintf(successtr, "[+] succesfully bound server socket to %s:%d\n", ADDRESS, PORT);
+	snprintf(successtr, sizeof(successtr), "[+] succesfully bound server socket to %s:%d\n", ADDRESS, PORT);
 	printf(successtr);
 
 	// listen() marks the socket refered to by sockfd as a passive listening
