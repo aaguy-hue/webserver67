@@ -159,7 +159,7 @@ int main() {
 	// here I set flags to 0 since none are relevant for this case
 	sleep(1);
 	const char message[] = "Hello from server!";
-	int numBytes = send(clientfd, message, sizeof(message), 0);
+	int numBytes = send(clientfd, message, strlen(message), 0);
 	if (numBytes < 0) {
 		perror("[-] Failed to send message to client!");
 		close(serverfd);
