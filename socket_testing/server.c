@@ -36,6 +36,7 @@
 
 // rfs 9110 is the modern rfc defining the http spec
 
+#define ADDRESS "127.0.0.1"
 #define PORT 8067
 
 int main() {
@@ -54,26 +55,35 @@ int main() {
 		exit(EXIT_FAILURE);
 	}
 	printf("[+] yay our server socket was created!!!\n");
-	
-	// int setsockopt(int sockfd, int level, int optname, 
+
+	// int setsockopt(int sockfd, int level, int optname,
 	// const void optval[optlen], socklen_t optlen)
 	// sockfd -> our socket file descripter returned by socket()
 	// level -> options exist at multiple protocol levels, always available at
 	// uppermost socket level, SOL_SOCKET is for options at the socket level.
 	//
-	bool opt = true;
-	if (setsockopt(serverfd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, 
-				&opt, sizeof(opt)) < 0) {
+	int enable = true;
+	if (setsockopt(serverfd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT,
+				&enable, sizeof(enable)) < 0) {
 		perror("[-] setting socket options failed");
 		exit(EXIT_FAILURE);
 	}
+	printf("[+] set socket options!\n");
 
 	struct sockaddr_in server_addr;
 	socklen_t addrlen = sizeof(server_addr);
 	memset(&server_addr, 0, addrlen);
-	server_addr.sin_family = AF_UNIX;
-	//server_addr.sin_addr.s_addr = INADDR_ANY; // this is just 0.0.0.0
-	server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+	server_addr.sin_family = AF_INET;
+	server_addr.sin_addr.s_addr = INADDR_ANY; // this is just 0.0.0.0
+	server_addr.sin_addr.s_addr = inet_addr(ADDRESS);
 	server_addr.sin_port = htons(PORT);
-	bind(serverfd, (struct sockaddr *)&server_addr, addrlen);
+	if (bind(serverfd, (struct sockaddr *)&server_addr, addrlen) < 0) {
+		char errorstr[200];
+		sprintf(errorstr, "[-] failed to bind socket to %s:%d", ADDRESS, PORT);
+		perror(errorstr);
+		exit(EXIT_FAILURE);
+	}
+	char successtr[200];
+	sprintf(successtr, "[+] succesfully bound socket to %s:%d", ADDRESS, PORT);
+	printf(successtr);
 }
