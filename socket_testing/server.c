@@ -75,8 +75,9 @@ int main() {
 	// uppermost socket level, SOL_SOCKET is for options at the socket level.
 	//
 	int enable = true;
-	if (setsockopt(serverfd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT,
-				&enable, sizeof(enable)) < 0) {
+	int opt1ok = setsockopt(serverfd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(enable));
+	int opt2ok = setsockopt(serverfd, SOL_SOCKET, SO_REUSEPORT, &enable, sizeof(enable));
+	if (opt1ok < 0 || opt2ok < 0) {
 		perror("[-] Setting server socket options failed");
 		if (close(serverfd) < 0) {
 			perror("[--] Failed to close server socket!");
