@@ -145,6 +145,11 @@ int main() {
 	// if you specify no flags then accept4() is the same as accept()
 	// accept4() is a nonstandard extension and isn't POSIX-compliant
 	int clientfd = accept(serverfd, NULL, NULL);
+	if (clientfd < 0) {
+		perror("[-] Failed to accept client connection attempt");
+		close(serverfd);
+		exit(EXIT_FAILURE);
+	}
 	printf("[+] Established connection with client!\n");
 
 	// send(int sockfd, const void buf[size], size_t size, int flags)
