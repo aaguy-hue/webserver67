@@ -126,12 +126,13 @@ int main() {
 
 	// accept() extracts the first connection in the queue from the socket
 	// it creates a new socket and returns that (it doesn't modify the original)
+	// the 2nd/3rd params are the client info, but we leave that null
 	// accept4() is the same thing but it has a 4th parameter, flags, which is
 	// useful in multithreaded code bc it lets you have nonblocking calls and
 	// enhanced security
 	// if you specify no flags then accept4() is the same as accept()
 	// accept4() is a nonstandard extension and isn't POSIX-compliant
-	int clientfd = accept(serverfd, server_addr, &addrlen);
+	int clientfd = accept(serverfd, NULL, NULL);
 	printf("[+] Established connection with client!\n");
 
 	// send(int sockfd, const void buf[size], size_t size, int flags)
