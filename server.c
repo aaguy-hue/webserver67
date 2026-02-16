@@ -7,6 +7,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <time.h>
+#include <signal.h>
 
 #define CHECK(x, msg) \
 	do { \
@@ -23,6 +24,12 @@
 static const char *ADDRESS = "127.0.0.1";
 static const int PORT = 8067;
 static const int BACKLOG_LENGTH = 2;
+
+static volatile bool keepRunning = true;
+
+void ctrlCHandler() {
+	keepRunning = false;
+}
 
 int main() {
 	int serverfd = -1;
@@ -79,8 +86,23 @@ int main() {
 	inet_ntop(AF_INET, &client_addr.sin_addr, client_ip, sizeof(client_ip));
 	printf("[+] Client connected from %s:%d!\n", client_ip, ntohs(client_addr.sin_port));
 
+	signal(SIGINT, ctrlCHandler);
 
-
+	char buf[500];
+	int out;
+	while (keepRunning) {
+		memset(buf, 0, sizeof buf);
+		out = recv(clientfd, buf, sizeof buf, MSG_CMSG_CLOEXEC);
+		if (out == -1) {
+			// no data received
+		} else if (out == 0) {
+			// connection has been closed
+			break;
+		} else {
+			// out is the number of bytes read
+			printf("Read %d bytes! Message: %s", out, buf);
+		}
+	}
 
 
 
