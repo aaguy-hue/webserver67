@@ -1,0 +1,13 @@
+rfc 9110:
+1. http normalization, percent decoding (4.2.3)
+  a. See rfc 3986
+2. Decode URI origin (4.3.1)
+  a. format: {scheme, host, port}
+  b. ex: https://Example.com/happy.js -> {"https", "example.com", "443"}
+  c. Each origin has its own rules for how to map to resource
+3. Implement reverse proxy behavior (...)
+4. Decode fields (see section 5)
+  a. Field names case insensitive
+  b. Format: `field name = token`
+  c. Host and Connection fields must always be recognized
+  d. Ignore unrecognized header/trailer fields for compatibility

@@ -52,17 +52,19 @@ int main() {
 	}
 	printf("[+] Successfully connected to server socket!\n");
 
+	char msg[] = "Hello from client!";
+	send(clientfd, msg, strlen(msg), 0);
 
-	char buffer[100];
+	//char buffer[100];
 	// recv(int sockfd, void buf[size], size_t size, int flags)
 	// this will wait until it receives a message and store it in buf
 	// if the message is too large for buf, parts of the msg will be discarded
-	int bytes_received = recv(clientfd, buffer, sizeof(buffer), 0);
-	if (bytes_received < 0) {
-		perror("[-] Failed to receive message from server");
-		exit(EXIT_FAILURE);
-	}
-	printf("[+] Successfully received %d bytes from server!\nServer message: %s\n", bytes_received, buffer);
+	//int bytes_received = recv(clientfd, buffer, sizeof(buffer), 0);
+	//if (bytes_received < 0) {
+	//	perror("[-] Failed to receive message from server");
+	//	exit(EXIT_FAILURE);
+	//}
+	//printf("[+] Successfully received %d bytes from server!\nServer message: %s\n", bytes_received, buffer);
 
 	sleep(3);
 

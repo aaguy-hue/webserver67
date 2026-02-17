@@ -19,6 +19,8 @@
 		} \
 	} while (0)
 
+#define BUFFSIZE 100
+
 // rfs 9110 is the modern rfc defining the http spec
 
 static const char *ADDRESS = "127.0.0.1";
@@ -27,7 +29,7 @@ static const int BACKLOG_LENGTH = 2;
 
 static volatile bool keepRunning = true;
 
-void ctrlCHandler() {
+void ctrlCHandler(int) {
 	keepRunning = false;
 }
 
@@ -88,19 +90,20 @@ int main() {
 
 	signal(SIGINT, ctrlCHandler);
 
-	char buf[500];
+	char buf[BUFFSIZE];
 	int out;
 	while (keepRunning) {
 		memset(buf, 0, sizeof buf);
-		out = recv(clientfd, buf, sizeof buf, MSG_CMSG_CLOEXEC);
+		out = recv(clientfd, buf, sizeof buf, MSG_CMSG_CLOEXEC | MSG_DONTWAIT);
 		if (out == -1) {
 			// no data received
 		} else if (out == 0) {
 			// connection has been closed
+			printf("Client closed connection! Breaking...\n");
 			break;
 		} else {
 			// out is the number of bytes read
-			printf("Read %d bytes! Message: %s", out, buf);
+			printf("Read %d bytes! Message: %s\n", out, buf);
 		}
 	}
 
