@@ -10,7 +10,7 @@ LIBS=-lm
 _DEPS = hashmap.h fields.h
 DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
 
-_OBJ = server.o hashmap.o
+_OBJ = server.o hashmap.o fields.o
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
 
