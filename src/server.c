@@ -9,6 +9,7 @@
 #include <time.h>
 #include <signal.h>
 #include "hashmap.h"
+#include "fields.h"
 
 #define CHECK(x, msg) \
 	do { \
@@ -20,7 +21,7 @@
 		} \
 	} while (0)
 
-#define BUFFSIZE 100
+#define BUFFSIZE 1000
 
 // rfs 9110 is the modern rfc defining the http spec
 
@@ -107,6 +108,9 @@ int main() {
 			printf("Read %d bytes! Message: %s\n", out, buf);
 		}
 	}
+
+	struct hashmap *fields = readRequest(buf);
+	(void) fields;
 
 
 
