@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <time.h>
 #include <signal.h>
+#include "hashmap.h"
 
 #define CHECK(x, msg) \
 	do { \
