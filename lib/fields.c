@@ -118,6 +118,10 @@ struct hashmap *readRequest(char *buf) {
 			strncpy(tmp, field.value, FIELD_VALUE_MAXLEN-1);
 			tmp[FIELD_VALUE_MAXLEN-1] = '\0';
 
+			// gcc warns here that FIELD_VALUE_MAXLEN will be exceeded
+			// since 2 things of same length are being added here
+			// perhaps there's a better design choice I can make but the pragma
+			// just hides the error bc i'm too lazy
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-truncation"
 			snprintf(field.value, FIELD_VALUE_MAXLEN-1,
