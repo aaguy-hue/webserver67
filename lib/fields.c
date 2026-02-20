@@ -110,6 +110,21 @@ struct hashmap *readRequest(char *buf) {
 		field.value[FIELD_VALUE_MAXLEN-1] = '\0';
 		trim(field.value);
 
+		const char *existing = getHeader(map, field.name);
+		if (existing != NULL) {
+			char tmp[FIELD_VALUE_MAXLEN];
+			memset(tmp, 0, FIELD_VALUE_MAXLEN);
+
+			strncpy(tmp, field.value, FIELD_VALUE_MAXLEN-1);
+			tmp[FIELD_VALUE_MAXLEN-1] = '\0';
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-truncation"
+			snprintf(field.value, FIELD_VALUE_MAXLEN-1,
+					"%s, %s", existing, tmp);
+#pragma GCC diagnostic pop
+		}
+
 		hashmap_set(map, &field);
 
 		p += len;
@@ -117,9 +132,7 @@ struct hashmap *readRequest(char *buf) {
 		else break;
 	}
 
-	printf("hi1\n");
-	printf("User-Agent: %s", getHeader(map, "User-AgEnT"));
-	printf("hi3\n");
+	printf("Skibidi: %s\n", getHeader(map, "Skibidi"));
 
 	return map;
 }
