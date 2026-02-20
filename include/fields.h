@@ -13,5 +13,7 @@ typedef struct {
 
 struct hashmap *readRequest(char *buf);
 
+const char *getHeader(struct hashmap *map, const char *header_name);
+
 
 #endif

@@ -5,6 +5,18 @@
 #include "hashmap.h"
 #include "fields.h"
 
+/**
+ * Btw make sure your string is properly null-terminated
+ * or this is going to segfault and destroy you
+ *
+ * Note: this modifies the string in place
+*/
+void strToLower(char *str) {
+	for (int i = 0; str[i] != '\0'; i++) {
+		str[i] = (char)tolower((unsigned char) str[i]);
+	}
+}
+
 int field_compare(const void *a, const void *b, void *fdata)
 {
 	(void) fdata;
@@ -13,7 +25,7 @@ int field_compare(const void *a, const void *b, void *fdata)
 	const Field *fb = b;
 	return strcmp(fa->name, fb->name);
 }
-
+/*
 bool field_iter(const void *item, void *fdata)
 {
 	(void) item;
@@ -21,7 +33,7 @@ bool field_iter(const void *item, void *fdata)
 	//const Field *f = item;
 	return true;
 }
-
+*/
 uint64_t field_hash(const void *item, uint64_t seed0, uint64_t seed1)
 {
 	const Field *f = item;
@@ -67,6 +79,9 @@ struct hashmap *readRequest(char *buf) {
 		// assume no carriage return (\r) for simplicity
 		// since i would otherwise have to set two \0 chars
 		size_t len = strcspn(p, "\n");
+		if (len == 0) {
+			break; // reached blank line, headers over
+		}
 
 		bool goPast = false;
 		if (p[len] == '\n') {
@@ -89,6 +104,7 @@ struct hashmap *readRequest(char *buf) {
 		strncpy(field.name, str1, FIELD_NAME_MAXLEN-1);
 		field.name[FIELD_NAME_MAXLEN-1] = '\0';
 		trim(field.name);
+		strToLower(field.name);
 
 		strncpy(field.value, str2, FIELD_VALUE_MAXLEN-1);
 		field.value[FIELD_VALUE_MAXLEN-1] = '\0';
@@ -101,7 +117,26 @@ struct hashmap *readRequest(char *buf) {
 		else break;
 	}
 
-	printf("User-Agent: %s", ((const Field *) hashmap_get(map, &(Field){ .name="User-Agent" }))->value  );
+	printf("hi1\n");
+	printf("User-Agent: %s", getHeader(map, "User-AgEnT"));
+	printf("hi3\n");
+
 	return map;
+}
+
+const char *getHeader(struct hashmap *map, const char *header) {
+	Field lookupField = {0};
+
+	strncpy(lookupField.name, header, FIELD_NAME_MAXLEN-1);
+	lookupField.name[FIELD_NAME_MAXLEN - 1] = '\0';
+
+	strToLower(lookupField.name);
+
+	const Field *f = hashmap_get(map, &lookupField);
+
+	if (f) {
+		return f->value;
+	}
+	return NULL;
 }
 
