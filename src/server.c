@@ -93,22 +93,27 @@ int main() {
 	signal(SIGINT, ctrlCHandler);
 
 	char buf[BUFFSIZE];
-	int out;
+	int n;
 	while (keepRunning) {
-		memset(buf, 0, sizeof buf);
-		out = recv(clientfd, buf, sizeof buf, MSG_CMSG_CLOEXEC | MSG_DONTWAIT);
-		if (out == -1) {
+		memset(buf, 0, sizeof(buf));
+		// note: I do sizeof(buf) - 1 since I need to set the last byte
+		// to the null byte manually bc recv doesn't automatically add it
+		n = recv(clientfd, buf, sizeof(buf)-1, MSG_CMSG_CLOEXEC | MSG_DONTWAIT);
+		if (n == -1) {
 			// no data received
-		} else if (out == 0) {
+		} else if (n == 0) {
 			// connection has been closed
 			printf("Client closed connection! Breaking...\n");
 			break;
 		} else {
-			// out is the number of bytes read
-			printf("Read %d bytes! Message: %s\n", out, buf);
+			// n is the number of bytes read
+			printf("Read %d bytes! Message: %s\n", n, buf);
+			buf[n] = '\0';
+			break;
 		}
 	}
 
+	printf("[/] Buffer first byte: %d\n", buf[0]);
 	struct hashmap *fields = readRequest(buf);
 	(void) fields;
 
