@@ -29,40 +29,39 @@ uint64_t field_hash(const void *item, uint64_t seed0, uint64_t seed1)
 	return hashmap_sip(f->name, strlen(f->name), seed0, seed1);
 }
 
-struct hashmap *readRequest(char *buf) {
+struct hashmap *readRequest(char **buf) {
 	// 2nd param is initial capacity
 	struct hashmap *map = hashmap_new(sizeof(Field), 10, 0, 0, field_hash, field_compare, NULL, NULL);
 
-	char *p = buf;
-	while (*p)
+	while (**buf)
 	{
 		// assume no carriage return (\r) for simplicity
 		// since i would otherwise have to set two \0 chars
-		size_t len = strcspn(p, "\n");
+		size_t len = strcspn(*buf, "\n");
 		if (len == 0) {
 			break; // reached blank line, headers over
 		}
 
 		bool goPast = false;
-		if (p[len] == '\n') {
-			p[len] = '\0';
+		if ((*buf)[len] == '\n') {
+			(*buf)[len] = '\0';
 			goPast = true;
 		}
 
-		trim(p);
-		if (strcmp(p, "") == 0) {
+		trim(*buf);
+		if (strcmp(*buf, "") == 0) {
 			break;
 		}
 
-		char *colon = strchr(p, ':');
+		char *colon = strchr(*buf, ':');
 		if (!colon) {
-			printf("[-] Malformed input detected! Line: %s\n", p);
-			p += len;
-			if (goPast) p++;
+			printf("[-] Malformed input detected! Line: %s\n", (*buf));
+			(*buf) += len;
+			if (goPast) (*buf)++;
 			continue;
 		}
 		*colon = '\0';
-		char *str1 = p;
+		char *str1 = *buf;
 		char *str2 = colon+1;
 
 		Field field;
@@ -96,8 +95,8 @@ struct hashmap *readRequest(char *buf) {
 
 		hashmap_set(map, &field);
 
-		p += len;
-		if (goPast) p++;
+		(*buf) += len;
+		if (goPast) (*buf)++;
 		else break;
 	}
 
