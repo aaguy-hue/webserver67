@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "control_data.h"
+#include "util.h"
 
 // I have no plans for windows compat but this still bothers me
 #if defined(_WIN32) || defined(_WIN64)
@@ -49,7 +50,8 @@ ControlData getControlData(char** buf)
 	strncpy(retval.target, token, REQUEST_TARGET_MAXLEN-1);
 	retval.target[REQUEST_TARGET_MAXLEN-1] = '\0';
 
-	token = strtok_r(line, "\n", &line);
+	token = strtok_r(line, " \r\n", &line);
+	trim(token); // do this to remove \r if windows
 	retval.version = getVersionFromStr(token);
 
 	(*buf) += len+1;

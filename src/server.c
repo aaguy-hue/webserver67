@@ -116,10 +116,12 @@ int main() {
 
 	char *bufptr = buf;
 	ControlData controlData = getControlData(&bufptr);
-	printf("[/] HTTP target: %s", controlData.target);
+	printf("[/] HTTP Method: %d\n", controlData.method);
+	printf("[/] HTTP Target: %s\n", controlData.target);
+	printf("[/] HTTP Version: %d\n", controlData.version);
 
 	//printf("[/] Buffer first byte: %d\n", buf[0]);
-	struct hashmap *headers = readRequest(buf);
+	struct hashmap *headers = readRequest(bufptr);
 	(void) headers;
 
 

@@ -4,18 +4,7 @@
 #include <ctype.h>
 #include "hashmap.h"
 #include "fields.h"
-
-/**
- * Btw make sure your string is properly null-terminated
- * or this is going to segfault and destroy you
- *
- * Note: this modifies the string in place
-*/
-void strToLower(char *str) {
-	for (int i = 0; str[i] != '\0'; i++) {
-		str[i] = (char)tolower((unsigned char) str[i]);
-	}
-}
+#include "util.h"
 
 int field_compare(const void *a, const void *b, void *fdata)
 {
@@ -38,35 +27,6 @@ uint64_t field_hash(const void *item, uint64_t seed0, uint64_t seed1)
 {
 	const Field *f = item;
 	return hashmap_sip(f->name, strlen(f->name), seed0, seed1);
-}
-
-/**
- * Trim leading and trailing white space characters from a string in place.
- *
- * @param str The string to trim.
- */
-void trim(char *str) {
-    int i;
-    int begin = 0;
-    int end = strlen(str) - 1;
-
-    // Find the index of the first non-whitespace character
-    while (isspace((unsigned char)str[begin])) {
-        begin++;
-    }
-
-    // Find the index of the last non-whitespace character
-    while (end >= begin && isspace((unsigned char)str[end])) {
-        end--;
-    }
-
-    // Shift all non-whitespace characters to the start of the string
-    for (i = begin; i <= end; i++) {
-        str[i - begin] = str[i];
-    }
-
-    // Null-terminate the new, shorter string
-    str[i - begin] = '\0';
 }
 
 struct hashmap *readRequest(char *buf) {
