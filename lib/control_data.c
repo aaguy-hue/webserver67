@@ -18,7 +18,7 @@ RequestMethod getMethodFromStr(char* methodstr)
 	if (strcmp(methodstr, "HEAD") == 0)    return HEAD;
 	if (strcmp(methodstr, "OPTIONS") == 0) return OPTIONS;
 
-	printf("[-] Invalid HTTP method: %s", methodstr);
+	printf("[-] Invalid HTTP method: %s\n", methodstr);
 	exit(EXIT_FAILURE);
 }
 
@@ -28,14 +28,15 @@ ProtocolVersion getVersionFromStr(char* versionstr)
 	if (strcmp(versionstr, "HTTP/1.0") == 0) return HTTP10;
 	if (strcmp(versionstr, "HTTP/1.1") == 0) return HTTP11;
 
-	printf("[-] Invalid HTTP version: %s", versionstr);
+	printf("[-] Invalid HTTP version: %s\n", versionstr);
 	exit(EXIT_FAILURE);
 }
 
 ControlData getControlData(char** buf)
 {
 	size_t len = strcspn(*buf, "\n");
-	buf[len] = '\0';
+	*buf[len] = '\0';
+	printf("hi: %d", (int)len);
 
 	char* line = *buf;
 
