@@ -96,8 +96,6 @@ struct hashmap *readRequest(char *buf) {
 		else break;
 	}
 
-	printf("Skibidi: %s\n", getHeader(map, "Skibidi"));
-
 	return map;
 }
 
