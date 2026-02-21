@@ -49,6 +49,11 @@ struct hashmap *readRequest(char *buf) {
 			goPast = true;
 		}
 
+		trim(p);
+		if (strcmp(p, "") == 0) {
+			break;
+		}
+
 		char *colon = strchr(p, ':');
 		if (!colon) {
 			printf("[-] Malformed input detected! Line: %s\n", p);
