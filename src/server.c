@@ -121,7 +121,7 @@ int main() {
 	printf("[/] HTTP Version: %d\n", controlData.version);
 
 	//printf("[/] Buffer first byte: %d\n", buf[0]);
-	struct hashmap *headers = readRequest(bufptr);
+	struct hashmap *headers = readRequest(&bufptr);
 	(void) headers;
 
 
