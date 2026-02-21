@@ -7,7 +7,9 @@ rfc 9110:
   c. Each origin has its own rules for how to map to resource
 3. Implement reverse proxy behavior (...)
 4. Decode fields (see section 5)
-  a. Field names case insensitive
-  b. Format: `field name = token`
-  c. Host and Connection fields must always be recognized
-  d. Ignore unrecognized header/trailer fields for compatibility
+  a. Format: `field name = token`
+  b. Decode different types of field values (5.6.*)
+    -> too much work
+5. Decode control data (6.2)
+  a. In HTTP/1.1 and earlier, this is the first line of the message
+
