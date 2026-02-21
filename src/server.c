@@ -10,6 +10,7 @@
 #include <signal.h>
 #include "hashmap.h"
 #include "fields.h"
+#include "control_data.h"
 
 #define CHECK(x, msg) \
 	do { \
@@ -113,9 +114,13 @@ int main() {
 		}
 	}
 
-	printf("[/] Buffer first byte: %d\n", buf[0]);
-	struct hashmap *fields = readRequest(buf);
-	(void) fields;
+	char *bufptr = buf;
+	ControlData controlData = getControlData(&bufptr);
+	printf("[/] HTTP target: %s", controlData.target);
+
+	//printf("[/] Buffer first byte: %d\n", buf[0]);
+	struct hashmap *headers = readRequest(buf);
+	(void) headers;
 
 
 

@@ -7,10 +7,10 @@ LDIR =../lib
 
 LIBS=-lm
 
-_DEPS = hashmap.h fields.h
+_DEPS = hashmap.h fields.h control_data.h
 DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
 
-_OBJ = server.o hashmap.o fields.o
+_OBJ = server.o hashmap.o fields.o control_data.o
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
 
