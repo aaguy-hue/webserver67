@@ -109,7 +109,7 @@ int main() {
 			break;
 		} else {
 			// n is the number of bytes read
-			printf("Read %d bytes!\n Message: \n%s\n\n\n", n, buf);
+			printf("Read %d bytes!\nMessage: \n%s\n\n\n", n, buf);
 			buf[n] = '\0';
 			break;
 		}
@@ -120,6 +120,11 @@ int main() {
 	HttpRequest request;
 
 	ControlData controlData = getControlData(&bufptr);
+	if (controlData.method == INVALID_METHOD || controlData.version == INVALID_VERSION) {
+		status = EXIT_FAILURE;
+		goto cleanup;
+	}
+
 	request.controlData = &controlData;
 	printf("[/] HTTP Method: %d\n", controlData.method);
 	printf("[/] HTTP Target: %s\n", controlData.target);

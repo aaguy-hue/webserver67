@@ -5,6 +5,7 @@
 #define REQUEST_TARGET_MAXLEN 200
 
 typedef enum {
+	INVALID_METHOD,
 	GET,
 	POST,
 	PUT,
@@ -15,6 +16,7 @@ typedef enum {
 } RequestMethod;
 
 typedef enum {
+	INVALID_VERSION,
 	HTTP09,
 	HTTP10,
 	HTTP11

@@ -13,4 +13,12 @@ rfc 9110:
 
 Note: 6.2 describes how to decode control data. In HTTP/1.1 and earlier, this is
 simply the first line, but it's complicated in later versions so I've decided to
-only support HTTP/1.1 and earlier.
+only support HTTP/1.1 and earlier
+
+
+
+
+Other:
+1. Cleanup is currently very bad
+  a. Since other functions can exit(), they don't clean up the sockets
+  b. Instead, I should properly handle this by returning error values then handling this in the main function
