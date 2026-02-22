@@ -42,23 +42,29 @@ struct hashmap *readRequest(char **buf) {
 			break; // reached blank line, headers over
 		}
 
-		bool goPast = false;
+		// the reason I used to have this gopast variable is since I fear that
+		// if there's no content and we go past the headers, we'll step into
+		// random memory. Instead, in that case we should stop at the end of the
+		// headers instead of going to the character after the headers.
+		//bool goPast = false;
 		if ((*buf)[len] == '\n') {
 			(*buf)[len] = '\0';
-			goPast = true;
+			//goPast = true;
 		}
 
 		trim(*buf);
 		if (strcmp(*buf, "") == 0) {
+			// this will go past the null char
+			(*buf)+=2;
 			break;
 		}
 
 		char *colon = strchr(*buf, ':');
 		if (!colon) {
 			printf("[-] Malformed input detected! Line: %s\n", (*buf));
-			(*buf) += len;
-			if (goPast) (*buf)++;
-			continue;
+			(*buf) += len+1;
+			//if (goPast) (*buf)++;
+			//continue;
 		}
 		*colon = '\0';
 		char *str1 = *buf;
@@ -95,9 +101,9 @@ struct hashmap *readRequest(char **buf) {
 
 		hashmap_set(map, &field);
 
-		(*buf) += len;
-		if (goPast) (*buf)++;
-		else break;
+		(*buf) += len + 1;
+		//if (goPast) (*buf)++;
+		//else break;
 	}
 
 	return map;

@@ -90,7 +90,7 @@ int main() {
 
 	char client_ip[INET_ADDRSTRLEN];
 	inet_ntop(AF_INET, &client_addr.sin_addr, client_ip, sizeof(client_ip));
-	printf("[+] Client connected from %s:%d!\n", client_ip, ntohs(client_addr.sin_port));
+	printf("[+] Client connected from %s:%d!\n\n", client_ip, ntohs(client_addr.sin_port));
 
 	signal(SIGINT, ctrlCHandler);
 
@@ -109,7 +109,7 @@ int main() {
 			break;
 		} else {
 			// n is the number of bytes read
-			printf("Read %d bytes! Message: %s\n", n, buf);
+			printf("Read %d bytes!\n Message: \n%s\n\n\n", n, buf);
 			buf[n] = '\0';
 			break;
 		}
