@@ -11,6 +11,7 @@
 #include "hashmap.h"
 #include "fields.h"
 #include "control_data.h"
+#include "request.h"
 
 #define CHECK(x, msg) \
 	do { \
@@ -115,15 +116,23 @@ int main() {
 	}
 
 	char *bufptr = buf;
+
+	HttpRequest request;
+
 	ControlData controlData = getControlData(&bufptr);
+	request.controlData = &controlData;
 	printf("[/] HTTP Method: %d\n", controlData.method);
 	printf("[/] HTTP Target: %s\n", controlData.target);
 	printf("[/] HTTP Version: %d\n", controlData.version);
 
 	//printf("[/] Buffer first byte: %d\n", buf[0]);
 	struct hashmap *headers = readRequest(&bufptr);
-	(void) headers;
+	request.headers = headers;
 
+	strncpy(request.content, bufptr, CONTENT_MAXLEN-1);
+	request.content[CONTENT_MAXLEN-1] = '\0';
+
+	printf("\nContent:\n%s\n", request.content);
 
 
 
