@@ -12,6 +12,7 @@
 #include "fields.h"
 #include "control_data.h"
 #include "request.h"
+#include "config.h"
 
 #define CHECK(x, msg) \
 	do { \
@@ -41,6 +42,9 @@ int main() {
 	int serverfd = -1;
 	int clientfd = -1;
 	int status = EXIT_SUCCESS;
+
+	ServerConfig *cfg = readConfig("../config.yml");
+	(void)cfg;
 
 	serverfd = socket(AF_INET, SOCK_STREAM, 0);
 	CHECK(serverfd, "[-] Failed to create socket :((");
