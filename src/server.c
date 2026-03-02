@@ -43,8 +43,9 @@ int main() {
 	int clientfd = -1;
 	int status = EXIT_SUCCESS;
 
-	ServerConfig *cfg = readConfig("../config.yml");
-	(void)cfg;
+	ServerConfig *cfg = malloc(sizeof(ServerConfig));
+	readConfig("../config.yml", cfg);
+	printf("Port: %d\n", cfg->port);
 
 	serverfd = socket(AF_INET, SOCK_STREAM, 0);
 	CHECK(serverfd, "[-] Failed to create socket :((");
@@ -146,6 +147,7 @@ int main() {
 
 
 cleanup:
+	free(cfg);
 	if (clientfd > -1) {
 		if (close(clientfd) < 0) {
 			perror("[-] Failed to close client socket!");

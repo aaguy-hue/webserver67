@@ -1,6 +1,6 @@
 IDIR =../include
 CC=gcc
-CFLAGS= -Wall -Werror -Wextra -g -I$(IDIR) -lyaml
+CFLAGS= -Wall -Werror -Wextra -g -I$(IDIR) -lcyaml -lyaml
 
 ODIR=obj
 LDIR =../lib

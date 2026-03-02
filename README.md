@@ -2,6 +2,13 @@
 
 A simple webserver written in C. See `todo.txt` for immediate priorities for what needs to be done.
 
+## Dependencies
+- C Standard Library
+- [LibCYAML v1.4.2](https://github.com/tlsa/libcyaml)
+  - [LibYAML](https://pyyaml.org/wiki/LibYAML)
+- Make
+- GCC
+
 ## Current Capabilities
 - Receives HTTP requests
 - Processes control data (i.e. first line)
