@@ -43,9 +43,14 @@ int main() {
 	int clientfd = -1;
 	int status = EXIT_SUCCESS;
 
-	ServerConfig *cfg = malloc(sizeof(ServerConfig));
-	readConfig("../config.yml", cfg);
-	printf("Port: %d\n", cfg->port);
+	//ServerConfig *cfg = malloc(sizeof(ServerConfig));
+	//memset(cfg, 0, sizeof(ServerConfig));
+	ServerConfig *cfg = readConfig("../config.yml");
+	if (cfg == NULL) {
+		status = EXIT_FAILURE;
+		goto cleanup;
+	}
+	printf("Port: %u\n", cfg->port);
 
 	serverfd = socket(AF_INET, SOCK_STREAM, 0);
 	CHECK(serverfd, "[-] Failed to create socket :((");
