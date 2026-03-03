@@ -27,9 +27,6 @@
 #define BUFFSIZE 1000
 
 // rfs 9110 is the modern rfc defining the http spec
-
-static const char *ADDRESS = "127.0.0.1";
-static const int PORT = 8067;
 static const int BACKLOG_LENGTH = 2;
 
 static volatile bool keepRunning = true;
@@ -67,9 +64,9 @@ int main() {
 	socklen_t addrlen = sizeof(server_addr_in);
 	memset(&server_addr_in, 0, addrlen);
 	server_addr_in.sin_family = AF_INET;
-	server_addr_in.sin_port = htons(PORT);
+	server_addr_in.sin_port = htons(cfg->port);
 	//server_addr_in.sin_addr.s_addr = INADDR_ANY; // this is just 0.0.0.0
-	int addrok = inet_pton(AF_INET, ADDRESS, &server_addr_in.sin_addr.s_addr);
+	int addrok = inet_pton(AF_INET, cfg->address, &server_addr_in.sin_addr.s_addr);
 	if (addrok == 0) {
 		printf("[-] Invalid IP address passed into inet_pton!\n");
 		status = EXIT_FAILURE;
@@ -82,11 +79,11 @@ int main() {
 	// bind server to the port
 
 	char errorstr[100];
-	snprintf(errorstr, sizeof(errorstr), "[-] failed to bind server socket to %s:%d", ADDRESS, PORT);
+	snprintf(errorstr, sizeof(errorstr), "[-] failed to bind server socket to %s:%d", cfg->address, cfg->port);
 	CHECK(bind(serverfd, server_addr, addrlen), errorstr);
 
 	char successtr[100];
-	snprintf(successtr, sizeof(successtr), "[+] succesfully bound server socket to %s:%d\n", ADDRESS, PORT);
+	snprintf(successtr, sizeof(successtr), "[+] succesfully bound server socket to %s:%d\n", cfg->address, cfg->port);
 	printf(successtr);
 
 	CHECK(listen(serverfd, BACKLOG_LENGTH), "[-] Failed to set server socket to listen for connections");
