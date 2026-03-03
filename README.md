@@ -13,12 +13,12 @@ A simple webserver written in C. See `todo.txt` for immediate priorities for wha
 - Receives HTTP requests
 - Processes control data (i.e. first line)
 - Processes request headers
+- Reads YAML config files
 
 ## Planned Capabilities
 - Process request content
 - Perhaps process request trailers
 - Prepare a response
-- YAML config files
 - Reverse proxy
 
 ## Limitations
