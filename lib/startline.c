@@ -38,7 +38,7 @@ char *getStrFromVersion(ProtocolVersion version) {
 	if (version == HTTP10) return "HTTP/1.0";
 	if (version == HTTP11) return "HTTP/1.1";
 
-	printf("[-] Invalid protocol version to convert to string!");
+	printf("[-] Invalid protocol version to convert to string!\n");
 	return "HTTP/INVALID";
 }
 

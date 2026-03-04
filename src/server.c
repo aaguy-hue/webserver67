@@ -41,6 +41,20 @@ int main() {
 	int clientfd = -1;
 	int status = EXIT_SUCCESS;
 	HttpResponse *response = malloc(sizeof(HttpResponse));
+	if (response == NULL) {
+		printf("[-] Failed to allocate memory for HTTP response");
+		status = EXIT_FAILURE;
+		exit(status);
+	}
+
+	response->statusLine = malloc(sizeof(StatusLine));
+	if (response->statusLine == NULL) {
+		printf("[-] Failed to allocate memory for HTTP response status line");
+		status = EXIT_FAILURE;
+		free(response);
+		exit(status);
+
+	}
 
 	//ServerConfig *cfg = malloc(sizeof(ServerConfig));
 	//memset(cfg, 0, sizeof(ServerConfig));
@@ -149,12 +163,16 @@ int main() {
 	printf("\nContent:\n%s\n", request.content);
 
 	generateResponse(response, &request);
+	printf("[+] Response generated!\n");
+
 	char *respText = "";
 	createResponseText(response, respText);
 	send(clientfd, respText, strlen(respText), 0);
 
 cleanup:
 	free(cfg);
+	free(response->statusLine);
+	free(response);
 	if (clientfd > -1) {
 		if (close(clientfd) < 0) {
 			perror("[-] Failed to close client socket!");
