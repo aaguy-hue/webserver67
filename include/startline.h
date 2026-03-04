@@ -3,6 +3,7 @@
 #define CONTROL_DATA_H
 
 #define REQUEST_TARGET_MAXLEN 200
+#define REASON_PHRASE_MAXLEN 1000
 
 typedef enum {
 	INVALID_METHOD,
@@ -27,6 +28,14 @@ typedef struct {
 	RequestMethod method;
 	ProtocolVersion version;
 } RequestLine;
+
+typedef struct {
+	char reasonPhrase[REASON_PHRASE_MAXLEN];
+	ProtocolVersion version;
+	unsigned short int statusCode;
+} StatusLine;
+
+char *getStrFromVersion(ProtocolVersion version);
 
 RequestLine getRequestLine(char** buf);
 

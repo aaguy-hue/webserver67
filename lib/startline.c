@@ -33,6 +33,15 @@ ProtocolVersion getVersionFromStr(char* versionstr)
 	return INVALID_VERSION;
 }
 
+char *getStrFromVersion(ProtocolVersion version) {
+	if (version == HTTP09) return "HTTP/0.9";
+	if (version == HTTP10) return "HTTP/1.0";
+	if (version == HTTP11) return "HTTP/1.1";
+
+	printf("[-] Invalid protocol version to convert to string!");
+	return "HTTP/INVALID";
+}
+
 // Processes the first line of control data from the request
 // Returns early if there's an issue in processing
 RequestLine getRequestLine(char** buf)
@@ -61,4 +70,11 @@ RequestLine getRequestLine(char** buf)
 	return retval;
 }
 
+void createStatusLine(StatusLine *statusLine, char **out, size_t bufferLen) {
+    char *versionStr = getStrFromVersion(statusLine->version);
+		memset(*out, 0, bufferLen);
+    snprintf(*out, bufferLen-1, "%s %u %s\r\n",
+				versionStr, statusLine->statusCode, statusLine->reasonPhrase);
+		out[bufferLen-1] = '\0';
+}
 
