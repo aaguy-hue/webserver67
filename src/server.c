@@ -165,7 +165,7 @@ int main() {
 	generateResponse(response, &request);
 	printf("[+] Response generated!\n");
 
-	char *respText = "";
+	char respText[HTTP_RESPONSE_MAXLEN];
 	createResponseText(response, respText);
 	send(clientfd, respText, strlen(respText), 0);
 
