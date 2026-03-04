@@ -26,8 +26,8 @@ typedef struct {
 	char target[REQUEST_TARGET_MAXLEN];
 	RequestMethod method;
 	ProtocolVersion version;
-} ControlData;
+} RequestLine;
 
-ControlData getControlData(char** buf);
+RequestLine getRequestLine(char** buf);
 
 #endif

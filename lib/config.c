@@ -20,6 +20,10 @@ static const cyaml_schema_field_t top_mapping_schema[] = {
 			"port", CYAML_FLAG_DEFAULT,
 			ServerConfig, port
 	),
+	CYAML_FIELD_STRING(
+			"address", CYAML_FLAG_DEFAULT,
+			ServerConfig, address, 7
+	),
 	CYAML_FIELD_END
 };
 

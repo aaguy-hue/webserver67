@@ -1,6 +1,6 @@
 #include <string.h>
 #include <stdio.h>
-#include "control_data.h"
+#include "startline.h"
 #include "util.h"
 
 // I have no plans for windows compat but this still bothers me, why does
@@ -35,7 +35,7 @@ ProtocolVersion getVersionFromStr(char* versionstr)
 
 // Processes the first line of control data from the request
 // Returns early if there's an issue in processing
-ControlData getControlData(char** buf)
+RequestLine getRequestLine(char** buf)
 {
 	size_t len = strcspn(*buf, "\n");
 	(*buf)[len] = '\0';
@@ -44,7 +44,7 @@ ControlData getControlData(char** buf)
 
 	char *token = strtok_r(line, " ", &line);
 
-	ControlData retval = {0};
+	RequestLine retval = {0};
 	retval.method = getMethodFromStr(token);
 	if (retval.method == INVALID_METHOD) return retval;
 

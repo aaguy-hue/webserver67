@@ -10,7 +10,7 @@
 #include <signal.h>
 #include "hashmap.h"
 #include "fields.h"
-#include "control_data.h"
+#include "startline.h"
 #include "request.h"
 #include "config.h"
 
@@ -47,7 +47,7 @@ int main() {
 		status = EXIT_FAILURE;
 		goto cleanup;
 	}
-	printf("Port: %u\n", cfg->port);
+	printf("[+] Successfully loaded YAML configuration!\n");
 
 	serverfd = socket(AF_INET, SOCK_STREAM, 0);
 	CHECK(serverfd, "[-] Failed to create socket :((");
@@ -126,16 +126,16 @@ int main() {
 
 	HttpRequest request;
 
-	ControlData controlData = getControlData(&bufptr);
-	if (controlData.method == INVALID_METHOD || controlData.version == INVALID_VERSION) {
+	RequestLine requestLine = getRequestLine(&bufptr);
+	if (requestLine.method == INVALID_METHOD || requestLine.version == INVALID_VERSION) {
 		status = EXIT_FAILURE;
 		goto cleanup;
 	}
 
-	request.controlData = &controlData;
-	printf("[/] HTTP Method: %d\n", controlData.method);
-	printf("[/] HTTP Target: %s\n", controlData.target);
-	printf("[/] HTTP Version: %d\n", controlData.version);
+	request.requestLine = &requestLine;
+	printf("[/] HTTP Method: %d\n", requestLine.method);
+	printf("[/] HTTP Target: %s\n", requestLine.target);
+	printf("[/] HTTP Version: %d\n", requestLine.version);
 
 	//printf("[/] Buffer first byte: %d\n", buf[0]);
 	struct hashmap *headers = readRequest(&bufptr);

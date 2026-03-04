@@ -4,9 +4,11 @@
 
 #define CONTENT_MAXLEN 1048576
 
+#include "startline.h"
+
 typedef struct {
 	char content[CONTENT_MAXLEN];
-	ControlData *controlData;
+	RequestLine *requestLine;
 	struct hashmap *headers;
 } HttpRequest;
 

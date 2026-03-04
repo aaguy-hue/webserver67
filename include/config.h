@@ -5,6 +5,7 @@
 
 typedef struct ServerConfig {
   unsigned short int port;
+	char address[16];
 } ServerConfig;
 
 // should never be used in other files
