@@ -14,6 +14,7 @@
 #include "request.h"
 #include "config.h"
 #include "response.h"
+#include "headers.h"
 
 #define CHECK(x, msg) \
 	do { \
@@ -37,15 +38,21 @@ void ctrlCHandler(int) {
 }
 
 int main() {
+	int status = EXIT_SUCCESS;
 	int serverfd = -1;
 	int clientfd = -1;
-	int status = EXIT_SUCCESS;
+	
+	// allocate memory for the request and response objects
+	HttpRequest request;
+	memset(&request, 0, sizeof(HttpRequest));
+
 	HttpResponse *response = malloc(sizeof(HttpResponse));
 	if (response == NULL) {
 		printf("[-] Failed to allocate memory for HTTP response");
 		status = EXIT_FAILURE;
 		exit(status);
 	}
+	memset(response, 0, sizeof(HttpResponse));
 
 	response->statusLine = malloc(sizeof(StatusLine));
 	if (response->statusLine == NULL) {
@@ -53,7 +60,6 @@ int main() {
 		status = EXIT_FAILURE;
 		free(response);
 		exit(status);
-
 	}
 
 	//ServerConfig *cfg = malloc(sizeof(ServerConfig));
@@ -71,9 +77,9 @@ int main() {
 
 	int enable = true;
 	int opt1ok = setsockopt(serverfd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(enable));
-	int opt2ok = setsockopt(serverfd, SOL_SOCKET, SO_REUSEPORT, &enable, sizeof(enable));
+	// int opt2ok = setsockopt(serverfd, SOL_SOCKET, SO_REUSEPORT, &enable, sizeof(enable));
 	CHECK(opt1ok, "[-] Setting server socket option SO_REUSEADDR failed");
-	CHECK(opt2ok, "[-] Setting server socket option SO_REUSEPORT failed");
+	// CHECK(opt2ok, "[-] Setting server socket option SO_REUSEPORT failed");
 	printf("[+] set server socket options!\n");
 
 	struct sockaddr_in server_addr_in;
@@ -140,8 +146,6 @@ int main() {
 
 	char *bufptr = buf;
 
-	HttpRequest request;
-
 	RequestLine requestLine = getRequestLine(&bufptr);
 	if (requestLine.method == INVALID_METHOD || requestLine.version == INVALID_VERSION) {
 		status = EXIT_FAILURE;
@@ -171,6 +175,12 @@ int main() {
 
 cleanup:
 	free(cfg);
+	if (request.headers != NULL) {
+		hashmap_free(request.headers);
+	}
+	if (response->headers != NULL) {
+		hashmap_free(response->headers);
+	}
 	free(response->statusLine);
 	free(response);
 	if (clientfd > -1) {
