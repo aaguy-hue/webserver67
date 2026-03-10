@@ -14,24 +14,43 @@ int field_compare(const void *a, const void *b, void *fdata)
 	const Field *fb = b;
 	return strcmp(fa->name, fb->name);
 }
-/*
-bool field_iter(const void *item, void *fdata)
-{
-	(void) item;
-	(void) fdata;
-	//const Field *f = item;
-	return true;
-}
-*/
+
+// bool field_iter(const void *item, void *fdata)
+// {
+// 	// (void) item;
+// 	(void) fdata;
+// 	const Field *f = item;
+// 	printf("Field%s: %s\n", f->name, f->value);
+// 	return true;
+// }
+
 uint64_t field_hash(const void *item, uint64_t seed0, uint64_t seed1)
 {
 	const Field *f = item;
 	return hashmap_sip(f->name, strlen(f->name), seed0, seed1);
 }
 
+Field createField(const char *name, const char *value) {
+	Field field;
+	strncpy(field.name, name, FIELD_NAME_MAXLEN-1);
+	field.name[FIELD_NAME_MAXLEN-1] = '\0';
+	trim(field.name);
+	strToLower(field.name);
+
+	strncpy(field.value, value, FIELD_VALUE_MAXLEN-1);
+	field.value[FIELD_VALUE_MAXLEN-1] = '\0';
+	trim(field.value);
+
+	return field;
+}
+
+struct hashmap *createFieldHashmap(size_t initial_capacity) {
+	return hashmap_new(sizeof(Field), initial_capacity, 0, 0, field_hash, field_compare, NULL, NULL);
+}
+
 struct hashmap *readRequest(char **buf) {
 	// 2nd param is initial capacity
-	struct hashmap *map = hashmap_new(sizeof(Field), 10, 0, 0, field_hash, field_compare, NULL, NULL);
+	struct hashmap *map = createFieldHashmap(20);
 
 	while (**buf)
 	{
@@ -60,15 +79,16 @@ struct hashmap *readRequest(char **buf) {
 		char *str1 = *buf;
 		char *str2 = colon+1;
 
-		Field field;
-		strncpy(field.name, str1, FIELD_NAME_MAXLEN-1);
-		field.name[FIELD_NAME_MAXLEN-1] = '\0';
-		trim(field.name);
-		strToLower(field.name);
+		Field field = createField(str1, str2);
+		// Field field;
+		// strncpy(field.name, str1, FIELD_NAME_MAXLEN-1);
+		// field.name[FIELD_NAME_MAXLEN-1] = '\0';
+		// trim(field.name);
+		// strToLower(field.name);
 
-		strncpy(field.value, str2, FIELD_VALUE_MAXLEN-1);
-		field.value[FIELD_VALUE_MAXLEN-1] = '\0';
-		trim(field.value);
+		// strncpy(field.value, str2, FIELD_VALUE_MAXLEN-1);
+		// field.value[FIELD_VALUE_MAXLEN-1] = '\0';
+		// trim(field.value);
 
 		const char *existing = getHeader(map, field.name);
 		if (existing != NULL) {

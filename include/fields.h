@@ -15,5 +15,8 @@ struct hashmap *readRequest(char **buf);
 
 const char *getHeader(struct hashmap *map, const char *header_name);
 
+struct hashmap *createFieldHashmap(size_t initial_capacity);
+
+Field createField(const char *name, const char *value);
 
 #endif
