@@ -163,7 +163,8 @@ int main() {
 	request.headers = headers;
 
 	// strncpy(request.content, bufptr, CONTENT_MAXLEN-1);
-	int contentLength = getHeader(headers, "content-length") ? atoi(getHeader(headers, "content-length")) : CONTENT_MAXLEN-1;
+	const char *contentLengthStr = popHeader(headers, "content-length");
+	int contentLength = contentLengthStr && strIsNumeric(contentLengthStr) ? atoi(contentLengthStr) : 0;
 	strncpy(request.content, bufptr, minInt(CONTENT_MAXLEN-1, contentLength));
 	request.content[CONTENT_MAXLEN-1] = '\0';
 
