@@ -15,6 +15,7 @@
 #include "config.h"
 #include "response.h"
 #include "headers.h"
+#include "util.h"
 
 #define CHECK(x, msg) \
 	do { \
@@ -161,7 +162,9 @@ int main() {
 	struct hashmap *headers = readRequest(&bufptr);
 	request.headers = headers;
 
-	strncpy(request.content, bufptr, CONTENT_MAXLEN-1);
+	// strncpy(request.content, bufptr, CONTENT_MAXLEN-1);
+	int contentLength = getHeader(headers, "content-length") ? atoi(getHeader(headers, "content-length")) : CONTENT_MAXLEN-1;
+	strncpy(request.content, bufptr, minInt(CONTENT_MAXLEN-1, contentLength));
 	request.content[CONTENT_MAXLEN-1] = '\0';
 
 	printf("\nContent:\n%s\n", request.content);
