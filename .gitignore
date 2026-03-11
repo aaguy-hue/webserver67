@@ -1,4 +1,4 @@
 *.out
 **/*.out
-src/build/*.out
-src/obj/*.o
+build/*.out
+obj/*.o

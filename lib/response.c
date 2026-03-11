@@ -5,6 +5,7 @@
 #include "fields.h"
 #include "response.h"
 #include "startline.h"
+#include "config.h"
 
 
 // IMPORTANT NOTE: \r\n is the line ending expected by HTTP
@@ -76,13 +77,32 @@ struct hashmap *generateResponseHeaders(HttpRequest *request) {
 	(void)request; // todo: use request headers to generate response headers
 	struct hashmap *headers = createFieldHashmap(10);
 
-	Field contentTypeHeader = createField("Content-Type", "application/json");
+	Field contentTypeHeader = createField("Content-Type", "text/html; charset=utf-8");
 	hashmap_set(headers, &contentTypeHeader);
 
 	Field contentSizeHeader = createField("Content-Size", "67");
 	hashmap_set(headers, &contentSizeHeader);
 
 	return headers;
+}
+
+void loadFileFromSiteRoot(const char *siteRoot, const char *target, char *outBuf, size_t outBufSize) {
+    char filePath[SITE_PATH_MAX + 1];
+    snprintf(filePath, SITE_PATH_MAX, "%s/%s", siteRoot, target);
+    filePath[SITE_PATH_MAX] = '\0';
+
+    FILE *f = fopen(filePath, "r");
+    if (f == NULL) {
+        fprintf(stderr, "[-] Failed to open file at path: %s\n", filePath);
+        strncpy(outBuf, "<h1>404 Not Found</h1>", outBufSize-1);
+        outBuf[outBufSize-1] = '\0';
+        return;
+    }
+
+    size_t bytesRead = fread(outBuf, 1, outBufSize-1, f);
+    outBuf[bytesRead] = '\0';
+
+    fclose(f);
 }
 
 void generateResponse(HttpResponse *response, HttpRequest *request) {
@@ -94,7 +114,155 @@ void generateResponse(HttpResponse *response, HttpRequest *request) {
 		char *reasonPhrase = "heya!";
 		strncpy(response->statusLine->reasonPhrase, reasonPhrase, REASON_PHRASE_MAXLEN-1);
 
-		char *resBody = "{'error': 'you are bad'}";
+		char *resBody = "<!DOCTYPE html> \
+<html> \
+<head> \
+<meta charset=\"UTF-8\"> \
+<title>A Small Happy Page</title> \
+ \
+<style> \
+body { \
+    margin: 0; \
+    font-family: Arial, sans-serif; \
+    background: linear-gradient(135deg, #ffd6e7, #d6f0ff); \
+    display: flex; \
+    justify-content: center; \
+    align-items: center; \
+    height: 100vh; \
+    text-align: center; \
+    overflow: hidden; \
+} \
+ \
+.card { \
+    background: white; \
+    padding: 40px; \
+    border-radius: 20px; \
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15); \
+    max-width: 400px; \
+} \
+ \
+h1 { \
+    margin-top: 0; \
+} \
+ \
+button { \
+    padding: 12px 20px; \
+    font-size: 16px; \
+    border: none; \
+    border-radius: 10px; \
+    background: #ff6fa8; \
+    color: white; \
+    cursor: pointer; \
+    transition: transform 0.15s; \
+} \
+ \
+button:hover { \
+    transform: scale(1.05); \
+} \
+ \
+.heart { \
+    position: absolute; \
+    font-size: 20px; \
+    animation: floatUp 3s linear forwards; \
+} \
+ \
+@keyframes floatUp { \
+    from { \
+        transform: translateY(0); \
+        opacity: 1; \
+    } \
+    to { \
+        transform: translateY(-200px); \
+        opacity: 0; \
+    } \
+} \
+ \
+.confetti { \
+    position: absolute; \
+    width: 8px; \
+    height: 8px; \
+    animation: fall 3s linear forwards; \
+} \
+ \
+@keyframes fall { \
+    from { \
+        transform: translateY(-50px) rotate(0deg); \
+    } \
+    to { \
+        transform: translateY(100vh) rotate(720deg); \
+    } \
+} \
+</style> \
+</head> \
+ \
+<body> \
+ \
+<div class=\"card\"> \
+<h1>Hey there 👋</h1> \
+<p>This tiny website exists for one reason:</p> \
+<p><b>To make you smile today.</b></p> \
+ \
+<button onclick=\"celebrate()\">Click for happiness</button> \
+ \
+<p id=\"message\" style=\"margin-top:20px;\"></p> \
+</div> \
+ \
+<script> \
+ \
+const messages = [ \
+'You matter more than you think.', \
+'Someone is glad you\\'re around.', \
+'Today might be random, but you\\'re not.', \
+'The world is slightly better because you\\'re in it.', \
+'I hope something good happens to you today.' \
+]; \
+ \
+function celebrate() { \
+ \
+document.getElementById(\"message\").innerText = \
+messages[Math.floor(Math.random()*messages.length)]; \
+ \
+for(let i=0;i<20;i++){ \
+    createHeart(); \
+} \
+ \
+for(let i=0;i<60;i++){ \
+    createConfetti(); \
+} \
+ \
+} \
+ \
+function createHeart(){ \
+    const heart = document.createElement(\"div\"); \
+    heart.className = \"heart\"; \
+    heart.innerText = \"💖\"; \
+ \
+    heart.style.left = Math.random()*window.innerWidth + \" px\"; \
+    heart.style.bottom = \"0px\"; \
+ \
+    document.body.appendChild(heart); \
+ \
+    setTimeout(()=>heart.remove(),3000); \
+} \
+ \
+function createConfetti(){ \
+    const conf = document.createElement(\"div\"); \
+    conf.className = \"confetti\"; \
+ \
+    const colors = [\"#ff6fa8\",\"#6fd3ff\",\"#ffd36f\",\"#8aff8a\",\"#c48aff\"]; \
+    conf.style.background = colors[Math.floor(Math.random()*colors.length)]; \
+ \
+    conf.style.left = Math.random()*window.innerWidth + \"px\"; \
+ \
+    document.body.appendChild(conf); \
+ \
+    setTimeout(()=>conf.remove(),3000); \
+} \
+ \
+</script> \
+ \
+</body> \
+</html>";
 		strncpy(response->body, resBody, CONTENT_MAXLEN-1);
 
 		// hashmap_get(request->headers, &(Field){.name="Content-Length"});

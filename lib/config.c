@@ -24,6 +24,10 @@ static const cyaml_schema_field_t top_mapping_schema[] = {
 			"address", CYAML_FLAG_DEFAULT,
 			ServerConfig, address, 7
 	),
+	CYAML_FIELD_STRING(
+			"site_root", CYAML_FLAG_DEFAULT,
+			ServerConfig, site_root, 1
+	),
 	CYAML_FIELD_END
 };
 

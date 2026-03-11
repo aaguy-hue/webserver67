@@ -1,5 +1,6 @@
 #include <string.h>
 #include <ctype.h>
+#include <stdbool.h>
 #include "util.h"
 
 /**
@@ -43,4 +44,20 @@ void strToLower(char *str) {
 	}
 }
 
+int minInt(int num1, int num2) {
+    return (num1 < num2) ? num1 : num2;
+}
 
+bool strIsNumeric(const char *str) {
+    if (str == NULL || *str == '\0') {
+        return false;
+    }
+
+    size_t sLen = strlen(str);
+    for (size_t i = 0; i < sLen; i++) {
+        if (!isdigit((unsigned char)str[i])) {
+            return false;
+        }
+    }
+    return true;
+}

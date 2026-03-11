@@ -80,16 +80,6 @@ struct hashmap *readRequest(char **buf) {
 		char *str2 = colon+1;
 
 		Field field = createField(str1, str2);
-		// Field field;
-		// strncpy(field.name, str1, FIELD_NAME_MAXLEN-1);
-		// field.name[FIELD_NAME_MAXLEN-1] = '\0';
-		// trim(field.name);
-		// strToLower(field.name);
-
-		// strncpy(field.value, str2, FIELD_VALUE_MAXLEN-1);
-		// field.value[FIELD_VALUE_MAXLEN-1] = '\0';
-		// trim(field.value);
-
 		const char *existing = getHeader(map, field.name);
 		if (existing != NULL) {
 			char tmp[FIELD_VALUE_MAXLEN];
@@ -126,6 +116,22 @@ const char *getHeader(struct hashmap *map, const char *header) {
 	strToLower(lookupField.name);
 
 	const Field *f = hashmap_get(map, &lookupField);
+
+	if (f) {
+		return f->value;
+	}
+	return NULL;
+}
+
+const char *popHeader(struct hashmap *map, const char *header) {
+	Field lookupField = {0};
+
+	strncpy(lookupField.name, header, FIELD_NAME_MAXLEN-1);
+	lookupField.name[FIELD_NAME_MAXLEN - 1] = '\0';
+
+	strToLower(lookupField.name);
+
+	const Field *f = hashmap_delete(map, &lookupField);
 
 	if (f) {
 		return f->value;

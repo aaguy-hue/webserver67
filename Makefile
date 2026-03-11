@@ -1,9 +1,9 @@
-IDIR =../include
+IDIR =./include
 CC=gcc
 CFLAGS= -Wall -Werror -Wextra -g -I$(IDIR) -lcyaml -lyaml -pedantic
 
 ODIR=obj
-LDIR =../lib
+LDIR =./lib
 
 LIBS=-lm
 

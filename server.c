@@ -65,7 +65,7 @@ int main() {
 
 	//ServerConfig *cfg = malloc(sizeof(ServerConfig));
 	//memset(cfg, 0, sizeof(ServerConfig));
-	ServerConfig *cfg = readConfig("../config.yml");
+	ServerConfig *cfg = readConfig("./config.yml");
 	if (cfg == NULL) {
 		status = EXIT_FAILURE;
 		goto cleanup;
@@ -162,7 +162,6 @@ int main() {
 	struct hashmap *headers = readRequest(&bufptr);
 	request.headers = headers;
 
-	// strncpy(request.content, bufptr, CONTENT_MAXLEN-1);
 	const char *contentLengthStr = popHeader(headers, "content-length");
 	int contentLength = contentLengthStr && strIsNumeric(contentLengthStr) ? atoi(contentLengthStr) : 0;
 	strncpy(request.content, bufptr, minInt(CONTENT_MAXLEN-1, contentLength));

@@ -13,7 +13,8 @@ typedef struct {
 
 struct hashmap *readRequest(char **buf);
 
-const char *getHeader(struct hashmap *map, const char *header_name);
+const char *getHeader(struct hashmap *map, const char *header);
+const char *popHeader(struct hashmap *map, const char *header);
 
 struct hashmap *createFieldHashmap(size_t initial_capacity);
 

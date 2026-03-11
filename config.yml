@@ -1,2 +1,3 @@
 port: 6741
 address: 127.0.0.1
+site_root: ./example
