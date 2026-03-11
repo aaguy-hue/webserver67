@@ -20,7 +20,7 @@
 #define CHECK(x, msg) \
 	do { \
 		if ((x) < 0) { \
-			fprintf(stderr, "[%s:%d] %s failed", __FILE__, __LINE__, #x); \
+			fprintf(stderr, "[%s:%d] %s failed\n", __FILE__, __LINE__, #x); \
 			perror(msg); \
 			status = EXIT_FAILURE; \
 			goto cleanup; \
@@ -112,69 +112,94 @@ int main() {
 	CHECK(listen(serverfd, BACKLOG_LENGTH), "[-] Failed to set server socket to listen for connections");
 	printf("[+] Server socket is now listening for connections!\n");
 
-	// Note: consider using accept4() on supporting platforms
-	struct sockaddr_in client_addr;
-	socklen_t addrsize = sizeof(client_addr);
-	clientfd = accept(serverfd, (struct sockaddr *)&client_addr, &addrsize);
-	CHECK(clientfd, "[-] Failed to acccept client connection attempt");
+	do {
+		// Note: consider using accept4() on supporting platforms
+		struct sockaddr_in client_addr;
+		socklen_t addrsize = sizeof(client_addr);
+		clientfd = accept(serverfd, (struct sockaddr *)&client_addr, &addrsize);
+		CHECK(clientfd, "[-] Failed to acccept client connection attempt");
 
-	char client_ip[INET_ADDRSTRLEN];
-	inet_ntop(AF_INET, &client_addr.sin_addr, client_ip, sizeof(client_ip));
-	printf("[+] Client connected from %s:%d!\n\n", client_ip, ntohs(client_addr.sin_port));
+		char client_ip[INET_ADDRSTRLEN];
+		inet_ntop(AF_INET, &client_addr.sin_addr, client_ip, sizeof(client_ip));
+		printf("[+] Client connected from %s:%d!\n\n", client_ip, ntohs(client_addr.sin_port));
 
-	signal(SIGINT, ctrlCHandler);
+		signal(SIGINT, ctrlCHandler);
 
-	char buf[BUFFSIZE];
-	int n;
-	while (keepRunning) {
-		memset(buf, 0, sizeof(buf));
-		// note: I do sizeof(buf) - 1 since I need to set the last byte
-		// to the null byte manually bc recv doesn't automatically add it
-		n = recv(clientfd, buf, sizeof(buf)-1, MSG_CMSG_CLOEXEC | MSG_DONTWAIT);
-		if (n == -1) {
-			// no data received
-		} else if (n == 0) {
-			// connection has been closed
-			printf("Client closed connection! Breaking...\n");
-			break;
-		} else {
-			// n is the number of bytes read
-			printf("Read %d bytes!\nMessage: \n%s\n\n\n", n, buf);
-			buf[n] = '\0';
-			break;
+		char buf[BUFFSIZE];
+		int n;
+		while (keepRunning) {
+			memset(buf, 0, sizeof(buf));
+			// note: I do sizeof(buf) - 1 since I need to set the last byte
+			// to the null byte manually bc recv doesn't automatically add it
+			n = recv(clientfd, buf, sizeof(buf)-1, MSG_CMSG_CLOEXEC | MSG_DONTWAIT);
+			if (n == -1) {
+				// no data received
+			} else if (n == 0) {
+				// connection has been closed
+				printf("Client closed connection! Breaking...\n");
+				break;
+			} else {
+				// n is the number of bytes read
+				printf("Read %d bytes!\nMessage: \n%s\n\n\n", n, buf);
+				buf[n] = '\0';
+				break;
+			}
 		}
-	}
+		if (!keepRunning) goto cleanup;
 
-	char *bufptr = buf;
+		char *bufptr = buf;
 
-	RequestLine requestLine = getRequestLine(&bufptr);
-	if (requestLine.method == INVALID_METHOD || requestLine.version == INVALID_VERSION) {
-		status = EXIT_FAILURE;
-		goto cleanup;
-	}
+		RequestLine requestLine = getRequestLine(&bufptr);
+		if (requestLine.method == INVALID_METHOD || requestLine.version == INVALID_VERSION) {
+			status = EXIT_FAILURE;
+			goto cleanup;
+		}
 
-	request.requestLine = &requestLine;
-	printf("[/] HTTP Method: %d\n", requestLine.method);
-	printf("[/] HTTP Target: %s\n", requestLine.target);
-	printf("[/] HTTP Version: %d\n", requestLine.version);
+		request.requestLine = &requestLine;
+		printf("[/] HTTP Method: %d\n", requestLine.method);
+		printf("[/] HTTP Target: %s\n", requestLine.target);
+		printf("[/] HTTP Version: %d\n", requestLine.version);
 
-	//printf("[/] Buffer first byte: %d\n", buf[0]);
-	struct hashmap *headers = readRequest(&bufptr);
-	request.headers = headers;
+		//printf("[/] Buffer first byte: %d\n", buf[0]);
+		struct hashmap *headers = readRequest(&bufptr);
+		request.headers = headers;
 
-	const char *contentLengthStr = popHeader(headers, "content-length");
-	int contentLength = contentLengthStr && strIsNumeric(contentLengthStr) ? atoi(contentLengthStr) : 0;
-	strncpy(request.content, bufptr, minInt(CONTENT_MAXLEN-1, contentLength));
-	request.content[CONTENT_MAXLEN-1] = '\0';
+		const char *contentLengthStr = popHeader(headers, "content-length");
+		int contentLength = contentLengthStr && strIsNumeric(contentLengthStr) ? atoi(contentLengthStr) : 0;
+		strncpy(request.content, bufptr, minInt(CONTENT_MAXLEN-1, contentLength));
+		request.content[CONTENT_MAXLEN-1] = '\0';
 
-	printf("\nContent:\n%s\n", request.content);
+		printf("\nContent:\n%s\n", request.content);
 
-	generateResponse(response, &request, cfg->site_root);
-	printf("[+] Response generated!\n");
+		generateResponse(response, &request, cfg->site_root);
+		printf("[+] Response generated!\n");
 
-	char respText[HTTP_RESPONSE_MAXLEN];
-	createResponseText(response, respText);
-	send(clientfd, respText, strlen(respText), 0);
+		char respText[HTTP_RESPONSE_MAXLEN];
+		createResponseText(response, respText);
+		send(clientfd, respText, strlen(respText), 0);
+		printf("Sent response!\n");
+
+
+
+		memset(&request, 0, sizeof(HttpRequest));
+		memset(response->statusLine, 0, sizeof(StatusLine));
+		// note: don't memset response to 0 bc then it zeros the struct and statusLine pointer and we need to free those later
+		//memset(response, 0, sizeof(HttpResponse));
+
+		if (request.headers != NULL) {
+			hashmap_free(request.headers);
+		}
+		if (response->headers != NULL) {
+			hashmap_free(response->headers);
+		}
+
+		if (clientfd > -1) {
+			if (close(clientfd) < 0) {
+				perror("[-] Failed to close client socket!");
+			}
+			printf("[+] Closed client socket!\n");
+		}
+	} while (keepRunning);
 
 cleanup:
 	free(cfg);
@@ -199,5 +224,5 @@ cleanup:
 		}
 		printf("[+] Closed server socket!\n");
 	}
-	exit(status);
+	return 0;
 }

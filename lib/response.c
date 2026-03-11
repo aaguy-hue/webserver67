@@ -28,8 +28,8 @@ void createHeaderLines(char **buf, struct hashmap *headers)
         snprintf(lineBuf, lineLen, "%s: %s\r\n", f->name, f->value);
         strncat(*buf, lineBuf, lineLen);
     }
-	printf("[+] Finished processing headers. Final header lines buffer: %s\n", *buf);
 	strncat(*buf, "\r\n", 3);
+	printf("[+] Finished processing headers. Final header lines buffer: \n%s\n", *buf);
 }
 
 void createResponseText(HttpResponse *response, char *out) {
@@ -57,6 +57,8 @@ void createResponseText(HttpResponse *response, char *out) {
 
 		// TODO: replace wth strncpy
 		strcpy(out, responseBuf);
+
+        printf("Finished creating response text!\n");
 }
 
 // TODO: this should be moved to request.c since it's more about processing the request than generating the response
@@ -73,20 +75,23 @@ static bool field_iter_processing(const void *item, void *fdata) {
 	return true;
 }
 
-struct hashmap *generateResponseHeaders(HttpRequest *request) {
+struct hashmap *generateResponseHeaders(HttpRequest *request, HttpResponse *response) {
 	(void)request; // todo: use request headers to generate response headers
 	struct hashmap *headers = createFieldHashmap(10);
 
 	Field contentTypeHeader = createField("Content-Type", "text/html; charset=utf-8");
 	hashmap_set(headers, &contentTypeHeader);
 
-	Field contentSizeHeader = createField("Content-Size", "67");
+    int contentLength = strlen(response->body);
+    char contentLengthStr[25];
+    snprintf(contentLengthStr, 25, "%d", contentLength);
+	Field contentSizeHeader = createField("Content-Size", contentLengthStr);
 	hashmap_set(headers, &contentSizeHeader);
 
 	return headers;
 }
 
-int loadFileFromSiteRoot(const char *site_root, const char *target, char *outBuf, size_t outBufSize) {
+int loadFileFromSiteRoot(const char *site_root, const char *target, char **outBuf, size_t outBufSize) {
     printf("[+] Loading file from site root. Site root: %s, target: %s\n", site_root, target);
     if (strcmp(target, "/") == 0) {
         target = "/index.html";
@@ -100,13 +105,13 @@ int loadFileFromSiteRoot(const char *site_root, const char *target, char *outBuf
     if (f == NULL) {
         // todo: add ability to add custom 404.html page
         fprintf(stderr, "[-] Failed to open file at path: %s\n", filePath);
-        strncpy(outBuf, "<h1>404 Not Found</h1>", outBufSize-1);
-        outBuf[outBufSize-1] = '\0';
+        strncpy(*outBuf, "<h1>404 Not Found</h1>", outBufSize-1);
+        (*outBuf)[outBufSize-1] = '\0';
         return 404;
     }
 
-    size_t bytesRead = fread(outBuf, 1, outBufSize-1, f);
-    outBuf[bytesRead] = '\0';
+    size_t bytesRead = fread(*outBuf, 1, outBufSize-1, f);
+    (*outBuf)[bytesRead] = '\0';
 
     fclose(f);
     return 200;
@@ -114,7 +119,8 @@ int loadFileFromSiteRoot(const char *site_root, const char *target, char *outBuf
 
 void generateResponse(HttpResponse *response, HttpRequest *request, char *site_root) {
     char *url = request->requestLine->target;
-    response->statusLine->statusCode = loadFileFromSiteRoot(site_root, url, response->body, CONTENT_MAXLEN);
+    char *bodyPtr = response->body;
+    response->statusLine->statusCode = loadFileFromSiteRoot(site_root, url, &bodyPtr, CONTENT_MAXLEN);
 
     response->statusLine->version = HTTP11;
 
@@ -126,5 +132,5 @@ void generateResponse(HttpResponse *response, HttpRequest *request, char *site_r
     hashmap_scan(request->headers, field_iter_processing, NULL);
 
     // headers later
-    response->headers = generateResponseHeaders(request);
+    response->headers = generateResponseHeaders(request, response);
 }
