@@ -17,6 +17,6 @@ typedef struct {
 
 void createResponseText(HttpResponse *response, char *out);
 
-void generateResponse(HttpResponse *response, HttpRequest *request);
+void generateResponse(HttpResponse *response, HttpRequest *request, char *server_root);
 
 #endif

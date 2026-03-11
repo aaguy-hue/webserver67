@@ -169,7 +169,7 @@ int main() {
 
 	printf("\nContent:\n%s\n", request.content);
 
-	generateResponse(response, &request);
+	generateResponse(response, &request, cfg->site_root);
 	printf("[+] Response generated!\n");
 
 	char respText[HTTP_RESPONSE_MAXLEN];
