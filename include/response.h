@@ -11,6 +11,7 @@
 #define HTTP_RESPONSE_MAXSIZE (1<<12)
 
 typedef struct {
+	size_t bodyLen;
 	char body[CONTENT_MAXLEN];
 	char fileName[SITE_PATH_MAX];
 	StatusLine *statusLine;

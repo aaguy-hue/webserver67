@@ -123,39 +123,56 @@ struct hashmap *generateResponseHeaders(HttpRequest *request, HttpResponse *resp
 	Field contentTypeHeader = createField("Content-Type", contentType);
 	hashmap_set(headers, &contentTypeHeader);
 
-    int contentLength = strlen(response->body);
     char contentLengthStr[25];
-    snprintf(contentLengthStr, 25, "%d", contentLength);
+    snprintf(contentLengthStr, 25, "%zu", response->bodyLen);
 	Field contentLengthHeader = createField("Content-Length", contentLengthStr);
 	hashmap_set(headers, &contentLengthHeader);
 
 	return headers;
 }
 
-int loadFileFromSiteRoot(const char *site_root, char **fileName, char **outBuf, size_t outBufSize) {
-    printf("[+] Loading file from site root. Site root: %s, target: %s\n", site_root, (*fileName));
-    if (strcmp((*fileName), "/") == 0) {
-        strncpy((*fileName), "/index.html", SITE_PATH_MAX);
-        (*fileName)[SITE_PATH_MAX] = '\0';
+void generate404(char **buf, int max_size, const char *site_root) {
+    char filePath[SITE_PATH_MAX + 1];
+    snprintf(filePath, SITE_PATH_MAX, "%s/404.html", site_root);
+    filePath[SITE_PATH_MAX] = '\0';
+
+
+    FILE *f = fopen(filePath, "r");
+    if (f == NULL) {
+        strncpy(*buf, "<h1>404 Not Found</h1>", max_size-1);
+        (*buf)[max_size-1] = '\0';
+    } else {
+        size_t bytesRead = fread(*buf, 1, max_size-1, f);
+        (*buf)[bytesRead] = '\0';
+        fclose(f);
+    }
+}
+
+int loadFileFromSiteRoot(const char *site_root, HttpResponse *response, size_t outBufSize) {
+    printf("[+] Loading file from site root. Site root: %s, target: %s\n", site_root, response->fileName);
+    if (strcmp(response->fileName, "/") == 0) {
+        strncpy(response->fileName, "/index.html", SITE_PATH_MAX);
+        response->fileName[SITE_PATH_MAX] = '\0';
     }
 
-    char filePath[SITE_PATH_MAX + 1];
-    snprintf(filePath, SITE_PATH_MAX, "%s/%s", site_root, (*fileName));
-    filePath[SITE_PATH_MAX] = '\0';
+    char filePath[SITE_PATH_MAX + 200];
+    snprintf(filePath, SITE_PATH_MAX + 200, "%s/%s", site_root, response->fileName);
+    filePath[SITE_PATH_MAX + 200] = '\0';
 
     FILE *f = fopen(filePath, "r");
     if (f == NULL) {
         // todo: add ability to add custom 404.html page
         fprintf(stderr, "[-] Failed to open file at path: %s\n", filePath);
-        strncpy(*outBuf, "<h1>404 Not Found</h1>", outBufSize-1);
-        (*outBuf)[outBufSize-1] = '\0';
-        strncpy((*fileName), "/index.html", SITE_PATH_MAX);
-        (*fileName)[SITE_PATH_MAX] = '\0';
+        char *bodyPtr = response->body;
+        generate404(&bodyPtr, outBufSize, site_root);
+        strncpy(response->fileName, "/index.html", SITE_PATH_MAX);
+        response->fileName[SITE_PATH_MAX] = '\0';
         return 404;
     }
 
-    size_t bytesRead = fread(*outBuf, 1, outBufSize-1, f);
-    (*outBuf)[bytesRead] = '\0';
+    size_t bytesRead = fread(response->body, 1, outBufSize-1, f);
+    response->body[bytesRead] = '\0';
+    response->bodyLen = (size_t)bytesRead;
 
     fclose(f);
     return 200;
@@ -166,10 +183,7 @@ void generateResponse(HttpResponse *response, HttpRequest *request, char *site_r
     strncpy(response->fileName, url, SITE_PATH_MAX-1);
     response->fileName[SITE_PATH_MAX-1] = '\0';
 
-    char *bodyPtr = response->body;
-    char *fileNamePtr = response->fileName;
-    response->statusLine->statusCode = loadFileFromSiteRoot(site_root, &fileNamePtr, &bodyPtr, CONTENT_MAXLEN);
-
+    response->statusLine->statusCode = loadFileFromSiteRoot(site_root, response, CONTENT_MAXLEN);
     response->statusLine->version = HTTP11;
 
     char *reasonPhrase = "";
