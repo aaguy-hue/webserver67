@@ -11,6 +11,7 @@ rfc 9110:
   b. Decode different types of field values (5.6.*)
     -> too much work
 	c. Handle `Set-Cookie` as a special case (5.3 Note)
+5. Set correct Content-Type header in response
 
 Note: 6.2 describes how to decode control data. In HTTP/1.1 and earlier, this is
 simply the first line, but it's complicated in later versions so I've decided to
