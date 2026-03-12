@@ -11,13 +11,6 @@ typedef struct ServerConfig {
   char site_root[SITE_PATH_MAX];
 } ServerConfig;
 
-// should never be used in other files
-// I don't want to put this in config.c though since it's harder to ensure
-// that it matches ServerConfig
-//struct _cfg_tmp {
-//	char* port;
-//};
-
 ServerConfig *readConfig(char *filePath);
 
 #endif
