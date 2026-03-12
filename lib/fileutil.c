@@ -38,8 +38,6 @@ void generateDirectoryListing(char *folderPath, char *folderName, char **outStr,
     strncat(*outStr, folderName, outStrSize - strlen(*outStr) - 1);
     strncat(*outStr, "</h1><ul>", outStrSize - strlen(*outStr) - 1);
     
-    strncpy(*outStr, startStr, outStrSize - 1);
-
     printf("[+] Generating directory listing for folder: %s. Start of generated HTML: %s\n", folderPath, *outStr);
     DIR *dir = opendir(folderPath);
     struct dirent *entry;
@@ -49,9 +47,9 @@ void generateDirectoryListing(char *folderPath, char *folderName, char **outStr,
         // should probably use the isDirectory function instead, but stat'ing every file is slow since each stat requires a syscall
         // for now, I will take the L and accept the fact that this won't work on all systems
         if (entry->d_type == DT_DIR) {
-            snprintf(*outStr + strlen(*outStr), outStrSize - strlen(*outStr) - 1, "<li><a href=\"%s/\">[DIR] %s/</a></li>", entry->d_name, entry->d_name);
+            snprintf(*outStr + strlen(*outStr), outStrSize - strlen(*outStr) - 1, "<li><a href=\"%s/%s/\">[DIR] %s/</a></li>", folderName, entry->d_name, entry->d_name);
         } else {
-            snprintf(*outStr + strlen(*outStr), outStrSize - strlen(*outStr) - 1, "<li><a href=\"%s\">[FILE] %s</a></li>", entry->d_name, entry->d_name);
+            snprintf(*outStr + strlen(*outStr), outStrSize - strlen(*outStr) - 1, "<li><a href=\"%s/%s\">[FILE] %s</a></li>", folderName, entry->d_name, entry->d_name);
         }
     }
 
