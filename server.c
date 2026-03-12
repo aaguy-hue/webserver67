@@ -112,6 +112,8 @@ int main() {
 	CHECK(listen(serverfd, BACKLOG_LENGTH), "[-] Failed to set server socket to listen for connections");
 	printf("[+] Server socket is now listening for connections!\n");
 
+	signal(SIGINT, ctrlCHandler);
+
 	do {
 		// Note: consider using accept4() on supporting platforms
 		struct sockaddr_in client_addr;
@@ -122,8 +124,6 @@ int main() {
 		char client_ip[INET_ADDRSTRLEN];
 		inet_ntop(AF_INET, &client_addr.sin_addr, client_ip, sizeof(client_ip));
 		printf("[+] Client connected from %s:%d!\n\n", client_ip, ntohs(client_addr.sin_port));
-
-		signal(SIGINT, ctrlCHandler);
 
 		char buf[BUFFSIZE];
 		int n;
@@ -145,7 +145,7 @@ int main() {
 				break;
 			}
 		}
-		if (!keepRunning) goto cleanup;
+		if (!keepRunning) break;
 
 		char *bufptr = buf;
 
