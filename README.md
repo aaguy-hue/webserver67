@@ -10,16 +10,19 @@ A simple webserver written in C. See `todo.txt` for immediate priorities for wha
 - GCC
 
 ## Current Capabilities
+- Serve static files over HTTP
+- Directory browsing
 - Receives HTTP requests
+- Prepares a response
 - Processes control data (i.e. first line)
 - Processes request headers
 - Reads YAML config files
-- Prepares a response
 
 ## Planned Capabilities
 - Process more types of request headers
 - Set correct Content-Type header in response
 - Reverse proxy
+- Allow subdirectories to have their own index.html files
 
 ## Limitations
 - Only supports HTTP/1.1
