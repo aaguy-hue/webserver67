@@ -3,6 +3,7 @@
 
 #include "startline.h"
 #include "request.h"
+#include "config.h"
 // we include request.h since there's some common things
 // such as the content maxlen
 
@@ -11,6 +12,7 @@
 
 typedef struct {
 	char body[CONTENT_MAXLEN];
+	char fileName[SITE_PATH_MAX];
 	StatusLine *statusLine;
 	struct hashmap *headers;
 } HttpResponse;

@@ -6,6 +6,7 @@
 #include "response.h"
 #include "startline.h"
 #include "config.h"
+#include "util.h"
 
 
 // IMPORTANT NOTE: \r\n is the line ending expected by HTTP
@@ -75,30 +76,71 @@ static bool field_iter_processing(const void *item, void *fdata) {
 	return true;
 }
 
+char *generateContentType(const char *target) {
+    // printf("[+] Generating content type for target: %s\n", target);
+    // this is really basic, ideally we would want to use something more robust like libmagic
+    // this is mostly good enough though and covers the most common types
+    // I don't plan on adding multipart data ever
+    // See https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/MIME_types for a reference list of MIME types
+    if (fileExtensionMatches(target, ".html")) {
+        return "text/html; charset=UTF-8";
+    } else if (fileExtensionMatches(target, ".css")) {
+        return "text/css";
+    } else if (fileExtensionMatches(target, ".js")) {
+        return "text/javascript";
+    } else if (fileExtensionMatches(target, ".json")) {
+        return "application/json";
+    } else if (fileExtensionMatches(target, ".png")) {
+        return "image/png";
+    } else if (fileExtensionMatches(target, ".jpg") || fileExtensionMatches(target, ".jpeg")) {
+        return "image/jpeg";
+    } else if (fileExtensionMatches(target, ".svg")) {
+        return "image/svg+xml";
+    } else if (fileExtensionMatches(target, ".gif")) {
+        return "image/gif";
+    } else if (fileExtensionMatches(target, ".av1") || fileExtensionMatches(target, ".avif")) {
+        return "image/avif";
+    } else if (fileExtensionMatches(target, ".webp")) {
+        return "image/webp";
+    } else if (fileExtensionMatches(target, ".apng")) {
+        return "image/apng";
+    } else if (fileExtensionMatches(target, ".mp3")) {
+        return "audio/mpeg";
+    } else if (fileExtensionMatches(target, ".mp4")) {
+        return "video/mp4";
+    } else if (fileExtensionMatches(target, ".txt")) {
+        return "text/plain";
+    } else {
+        return "application/octet-stream"; // default for unknown binary types
+    }
+}
+
 struct hashmap *generateResponseHeaders(HttpRequest *request, HttpResponse *response) {
 	(void)request; // todo: use request headers to generate response headers
 	struct hashmap *headers = createFieldHashmap(10);
 
-	Field contentTypeHeader = createField("Content-Type", "text/html; charset=utf-8");
+    char *contentType = generateContentType(response->fileName);
+	Field contentTypeHeader = createField("Content-Type", contentType);
 	hashmap_set(headers, &contentTypeHeader);
 
     int contentLength = strlen(response->body);
     char contentLengthStr[25];
     snprintf(contentLengthStr, 25, "%d", contentLength);
-	Field contentSizeHeader = createField("Content-Size", contentLengthStr);
-	hashmap_set(headers, &contentSizeHeader);
+	Field contentLengthHeader = createField("Content-Length", contentLengthStr);
+	hashmap_set(headers, &contentLengthHeader);
 
 	return headers;
 }
 
-int loadFileFromSiteRoot(const char *site_root, const char *target, char **outBuf, size_t outBufSize) {
-    printf("[+] Loading file from site root. Site root: %s, target: %s\n", site_root, target);
-    if (strcmp(target, "/") == 0) {
-        target = "/index.html";
+int loadFileFromSiteRoot(const char *site_root, char **fileName, char **outBuf, size_t outBufSize) {
+    printf("[+] Loading file from site root. Site root: %s, target: %s\n", site_root, (*fileName));
+    if (strcmp((*fileName), "/") == 0) {
+        strncpy((*fileName), "/index.html", SITE_PATH_MAX);
+        (*fileName)[SITE_PATH_MAX] = '\0';
     }
 
     char filePath[SITE_PATH_MAX + 1];
-    snprintf(filePath, SITE_PATH_MAX, "%s/%s", site_root, target);
+    snprintf(filePath, SITE_PATH_MAX, "%s/%s", site_root, (*fileName));
     filePath[SITE_PATH_MAX] = '\0';
 
     FILE *f = fopen(filePath, "r");
@@ -107,6 +149,8 @@ int loadFileFromSiteRoot(const char *site_root, const char *target, char **outBu
         fprintf(stderr, "[-] Failed to open file at path: %s\n", filePath);
         strncpy(*outBuf, "<h1>404 Not Found</h1>", outBufSize-1);
         (*outBuf)[outBufSize-1] = '\0';
+        strncpy((*fileName), "/index.html", SITE_PATH_MAX);
+        (*fileName)[SITE_PATH_MAX] = '\0';
         return 404;
     }
 
@@ -119,12 +163,16 @@ int loadFileFromSiteRoot(const char *site_root, const char *target, char **outBu
 
 void generateResponse(HttpResponse *response, HttpRequest *request, char *site_root) {
     char *url = request->requestLine->target;
+    strncpy(response->fileName, url, SITE_PATH_MAX-1);
+    response->fileName[SITE_PATH_MAX-1] = '\0';
+
     char *bodyPtr = response->body;
-    response->statusLine->statusCode = loadFileFromSiteRoot(site_root, url, &bodyPtr, CONTENT_MAXLEN);
+    char *fileNamePtr = response->fileName;
+    response->statusLine->statusCode = loadFileFromSiteRoot(site_root, &fileNamePtr, &bodyPtr, CONTENT_MAXLEN);
 
     response->statusLine->version = HTTP11;
 
-    char *reasonPhrase = "heya!";
+    char *reasonPhrase = "";
     strncpy(response->statusLine->reasonPhrase, reasonPhrase, REASON_PHRASE_MAXLEN-1);
 
     // hashmap_get(request->headers, &(Field){.name="Content-Length"});

@@ -61,3 +61,16 @@ bool strIsNumeric(const char *str) {
     }
     return true;
 }
+
+bool fileExtensionMatches(const char *fileName, const char *suffix) {
+    if (fileName == NULL || suffix == NULL) {
+        return false;
+    }
+
+    fileName = strrchr(fileName, '.');
+    // printf("[+] Checking file extension. Target: %s, suffix: %s\n", fileName, suffix);
+    if (fileName == NULL) {
+        return false; // can't find an extension
+    }
+    return strcmp(fileName, suffix) == 0;
+}

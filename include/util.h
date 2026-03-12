@@ -12,4 +12,6 @@ int minInt(int num1, int num2);
 
 bool strIsNumeric(const char *str);
 
+bool fileExtensionMatches(const char *fileName, const char *suffix);
+
 #endif
