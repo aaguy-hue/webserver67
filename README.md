@@ -14,11 +14,11 @@ A simple webserver written in C. See `todo.txt` for immediate priorities for wha
 - Processes control data (i.e. first line)
 - Processes request headers
 - Reads YAML config files
+- Prepares a response
 
 ## Planned Capabilities
-- Process request content
-- Perhaps process request trailers
-- Prepare a response
+- Process more types of request headers
+- Set correct Content-Type header in response
 - Reverse proxy
 
 ## Limitations
@@ -28,8 +28,6 @@ A simple webserver written in C. See `todo.txt` for immediate priorities for wha
   - Socket-related functions are in different headers on windows
   - Relies on unistd.h and time.h, unistd is unix-specific and time functions
     are different on windows
-- Does not support trailers (rfc 9110 6.5)
-  - Not that hard but would be extra work I don't want to do
 - Does not support chunked transfer coding
   - Assumes content is just one giant blob sent with the request
 
