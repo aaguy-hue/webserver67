@@ -1,6 +1,7 @@
 #ifndef HTTP_RESPONSE_H
 #define HTTP_RESPONSE_H
 
+#include <stddef.h>
 #include "startline.h"
 #include "request.h"
 #include "config.h"
@@ -20,6 +21,6 @@ typedef struct {
 
 void createResponseText(HttpResponse *response, char *out);
 
-void generateResponse(HttpResponse *response, HttpRequest *request, char *server_root);
+void generateResponse(HttpResponse *response, HttpRequest *request, char *server_root, bool directory_browsing);
 
 #endif

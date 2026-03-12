@@ -1,3 +1,4 @@
 port: 6741
 address: 127.0.0.1
+directory_browsing: true
 site_root: ./example

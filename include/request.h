@@ -2,7 +2,7 @@
 
 #define HTTP_REQUEST_H
 
-#define CONTENT_MAXLEN 1048576
+#define CONTENT_MAXLEN (1 << 12)
 
 #include "startline.h"
 

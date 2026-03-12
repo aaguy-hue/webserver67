@@ -3,6 +3,7 @@
 #include <stdbool.h>
 
 #include "fields.h"
+#include "fileutil.h"
 #include "response.h"
 #include "startline.h"
 #include "config.h"
@@ -148,7 +149,24 @@ void generate404(char **buf, int max_size, const char *site_root) {
     }
 }
 
-int loadFileFromSiteRoot(const char *site_root, HttpResponse *response, size_t outBufSize) {
+void make404Response(HttpResponse *response, char *filePath, size_t outBufSize, const char *site_root) {
+    fprintf(stderr, "[-] Failed to open file at path: %s\n", filePath);
+    char *bodyPtr = response->body;
+    generate404(&bodyPtr, outBufSize, site_root);
+    strncpy(response->fileName, "/404.html", SITE_PATH_MAX);
+    response->fileName[SITE_PATH_MAX] = '\0';
+}
+
+int loadDirectoryBrowsing(HttpResponse *response, char *filePath) {
+    char *bodyPtr = response->body;
+    generateDirectoryListing(filePath, response->fileName, &bodyPtr, CONTENT_MAXLEN);
+    response->bodyLen = strlen(response->body);
+    strncpy(response->fileName, "/directory.html", SITE_PATH_MAX); // ensure content type is text/html
+    response->fileName[SITE_PATH_MAX] = '\0';
+    return 200;
+}
+
+int loadFileFromSiteRoot(const char *site_root, HttpResponse *response, size_t outBufSize, bool directory_browsing) {
     printf("[+] Loading file from site root. Site root: %s, target: %s\n", site_root, response->fileName);
     if (strcmp(response->fileName, "/") == 0) {
         strncpy(response->fileName, "/index.html", SITE_PATH_MAX);
@@ -156,17 +174,23 @@ int loadFileFromSiteRoot(const char *site_root, HttpResponse *response, size_t o
     }
 
     char filePath[SITE_PATH_MAX + 200];
-    snprintf(filePath, SITE_PATH_MAX + 200, "%s/%s", site_root, response->fileName);
+    snprintf(filePath, SITE_PATH_MAX + 200, "%s%s", site_root, response->fileName);
     filePath[SITE_PATH_MAX + 200] = '\0';
+
+    if (isDirectory(filePath)) {
+        printf("[+] Target is a directory. File path: %s\n", filePath);
+        if (!directory_browsing) {
+            printf("[-] Directory browsing is disabled. Cannot load directory at path: %s\n", filePath);
+            make404Response(response, filePath, outBufSize, site_root);
+            return 404;
+        }
+        printf("[+] Directory browsing is enabled. Generating directory listing for path: %s\n", filePath);
+        return loadDirectoryBrowsing(response, filePath);
+    }
 
     FILE *f = fopen(filePath, "r");
     if (f == NULL) {
-        // todo: add ability to add custom 404.html page
-        fprintf(stderr, "[-] Failed to open file at path: %s\n", filePath);
-        char *bodyPtr = response->body;
-        generate404(&bodyPtr, outBufSize, site_root);
-        strncpy(response->fileName, "/index.html", SITE_PATH_MAX);
-        response->fileName[SITE_PATH_MAX] = '\0';
+        make404Response(response, filePath, outBufSize, site_root);
         return 404;
     }
 
@@ -178,12 +202,12 @@ int loadFileFromSiteRoot(const char *site_root, HttpResponse *response, size_t o
     return 200;
 }
 
-void generateResponse(HttpResponse *response, HttpRequest *request, char *site_root) {
+void generateResponse(HttpResponse *response, HttpRequest *request, char *site_root, bool directory_browsing) {
     char *url = request->requestLine->target;
     strncpy(response->fileName, url, SITE_PATH_MAX-1);
     response->fileName[SITE_PATH_MAX-1] = '\0';
 
-    response->statusLine->statusCode = loadFileFromSiteRoot(site_root, response, CONTENT_MAXLEN);
+    response->statusLine->statusCode = loadFileFromSiteRoot(site_root, response, CONTENT_MAXLEN, directory_browsing);
     response->statusLine->version = HTTP11;
 
     char *reasonPhrase = "";

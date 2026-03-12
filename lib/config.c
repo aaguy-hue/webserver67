@@ -28,6 +28,10 @@ static const cyaml_schema_field_t top_mapping_schema[] = {
 			"site_root", CYAML_FLAG_DEFAULT,
 			ServerConfig, site_root, 1
 	),
+	CYAML_FIELD_BOOL(
+		"directory_browsing", CYAML_FLAG_OPTIONAL,
+		ServerConfig, directory_browsing
+	),
 	CYAML_FIELD_END
 };
 
