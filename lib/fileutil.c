@@ -33,7 +33,6 @@ void generateDirectoryListing(char *folderPath, char *folderName, char **outStr,
     const char *startStr = "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><title>Directory Listing</title></head><body><h1>Listing for ";
     const char *endStr = "</ul></body></html>";
     
-    printf("Hello!2 %s %zu %s %zu\n", startStr, strlen(startStr), folderName, strlen(endStr));
     strncat(*outStr, startStr, outStrSize - 1);
     strncat(*outStr, folderName, outStrSize - strlen(*outStr) - 1);
     strncat(*outStr, "</h1><ul>", outStrSize - strlen(*outStr) - 1);
