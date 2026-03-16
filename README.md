@@ -6,6 +6,7 @@ A simple webserver written in C. See `todo.txt` for immediate priorities for wha
 - C Standard Library
 - [LibCYAML v1.4.2](https://github.com/tlsa/libcyaml)
   - [LibYAML](https://pyyaml.org/wiki/LibYAML)
+- [Zlib v1.3.2.1 (compression)](https://github.com/madler/zlib)
 - Make
 - GCC
 
