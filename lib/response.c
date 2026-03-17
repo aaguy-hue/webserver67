@@ -224,22 +224,22 @@ int loadDirectoryBrowsing(HttpResponse *response, char *filePath) {
     return 200;
 }
 
-int loadFileFromSiteRoot(const char *site_root, HttpRequest *request, HttpResponse *response, size_t outBufSize, bool directory_browsing) {
-    printf("[+] Loading file from site root. Site root: %s, target: %s\n", site_root, response->fileName);
+int loadFileFromSiteRoot(ServerConfig *cfg, HttpRequest *request, HttpResponse *response, size_t outBufSize) {
+    printf("[+] Loading file from site root. Site root: %s, target: %s\n", cfg->site_root, response->fileName);
     if (strcmp(response->fileName, "/") == 0) {
         strncpy(response->fileName, "/index.html", SITE_PATH_MAX);
         response->fileName[SITE_PATH_MAX] = '\0';
     }
 
     char filePath[SITE_PATH_MAX + 200];
-    snprintf(filePath, SITE_PATH_MAX + 200, "%s%s", site_root, response->fileName);
+    snprintf(filePath, SITE_PATH_MAX + 200, "%s%s", cfg->site_root, response->fileName);
     filePath[SITE_PATH_MAX + 200] = '\0';
 
     if (isDirectory(filePath)) {
         printf("[+] Target is a directory. File path: %s\n", filePath);
-        if (!directory_browsing) {
+        if (!cfg->directory_browsing) {
             printf("[-] Directory browsing is disabled. Cannot load directory at path: %s\n", filePath);
-            make404Response(response, filePath, outBufSize, site_root);
+            make404Response(response, filePath, outBufSize, cfg->site_root);
             return 404;
         }
         printf("[+] Directory browsing is enabled. Generating directory listing for path: %s\n", filePath);
@@ -260,7 +260,7 @@ int loadFileFromSiteRoot(const char *site_root, HttpRequest *request, HttpRespon
 
     FILE *f = fopen(compressedFile, "rb");
     if (f == NULL) {
-        make404Response(response, filePath, outBufSize, site_root);
+        make404Response(response, filePath, outBufSize, cfg->site_root);
         return 404;
     }
 
@@ -272,21 +272,18 @@ int loadFileFromSiteRoot(const char *site_root, HttpRequest *request, HttpRespon
     return 200;
 }
 
-void generateResponse(HttpResponse *response, HttpRequest *request, char *site_root, bool directory_browsing) {
+void generateResponse(HttpResponse *response, HttpRequest *request, ServerConfig *cfg) {
     char *url = request->requestLine->target;
     strncpy(response->fileName, url, SITE_PATH_MAX-1);
     response->fileName[SITE_PATH_MAX-1] = '\0';
 
-    response->statusLine->statusCode = loadFileFromSiteRoot(site_root, request, response, CONTENT_MAXLEN, directory_browsing);
+    response->statusLine->statusCode = loadFileFromSiteRoot(cfg, request, response, CONTENT_MAXLEN);
     response->statusLine->version = HTTP11;
 
     char *reasonPhrase = "";
     strncpy(response->statusLine->reasonPhrase, reasonPhrase, REASON_PHRASE_MAXLEN-1);
 
-    // hashmap_get(request->headers, &(Field){.name="Content-Length"});
-
     hashmap_scan(request->headers, field_iter_processing, NULL);
 
-    // headers later
     response->headers = generateResponseHeaders(request, response);
 }

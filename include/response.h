@@ -33,6 +33,6 @@ void sendStatusLine(HttpResponse *response, int clientfd);
 void sendHeaders(HttpResponse *response, int clientfd);
 void sendBody(HttpResponse *response, int clientfd);
 
-void generateResponse(HttpResponse *response, HttpRequest *request, char *server_root, bool directory_browsing);
+void generateResponse(HttpResponse *response, HttpRequest *request, ServerConfig *cfg);
 
 #endif
