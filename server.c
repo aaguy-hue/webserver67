@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <time.h>
 #include <signal.h>
+
 #include "hashmap.h"
 #include "fields.h"
 #include "startline.h"
@@ -47,20 +48,10 @@ int main() {
 	HttpRequest request;
 	memset(&request, 0, sizeof(HttpRequest));
 
-	HttpResponse *response = malloc(sizeof(HttpResponse));
-	if (response == NULL) {
-		printf("[-] Failed to allocate memory for HTTP response");
+	HttpResponse *response = initializeResponse();
+	if (response == NULL || response->statusLine == NULL) {
 		status = EXIT_FAILURE;
-		exit(status);
-	}
-	memset(response, 0, sizeof(HttpResponse));
-
-	response->statusLine = malloc(sizeof(StatusLine));
-	if (response->statusLine == NULL) {
-		printf("[-] Failed to allocate memory for HTTP response status line");
-		status = EXIT_FAILURE;
-		free(response);
-		exit(status);
+		goto cleanup;
 	}
 
 	//ServerConfig *cfg = malloc(sizeof(ServerConfig));
@@ -174,9 +165,10 @@ int main() {
 		generateResponse(response, &request, cfg->site_root, cfg->directory_browsing);
 		printf("[+] Response generated!\n");
 
-		char respText[HTTP_RESPONSE_MAXLEN];
-		createResponseText(response, respText);
-		send(clientfd, respText, strlen(respText), 0);
+
+		sendStatusLine(response, clientfd);
+		sendHeaders(response, clientfd);
+		sendBody(response, clientfd);
 		printf("Sent response!\n");
 
 
@@ -206,11 +198,7 @@ cleanup:
 	if (request.headers != NULL) {
 		hashmap_free(request.headers);
 	}
-	if (response->headers != NULL) {
-		hashmap_free(response->headers);
-	}
-	free(response->statusLine);
-	free(response);
+	freeResponse(response);
 	if (clientfd > -1) {
 		if (close(clientfd) < 0) {
 			perror("[-] Failed to close client socket!");
@@ -224,5 +212,5 @@ cleanup:
 		}
 		printf("[+] Closed server socket!\n");
 	}
-	return 0;
+	return status;
 }

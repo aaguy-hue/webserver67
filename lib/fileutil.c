@@ -1,6 +1,8 @@
 #include <sys/stat.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "fileutil.h"
 
 bool isDirectory(const char *path) {
@@ -25,7 +27,6 @@ bool isDirectory(const char *path) {
 #else
 
 #include <dirent.h>
-#include <string.h>
 #include "request.h"
 
 void generateDirectoryListing(char *folderPath, char *folderName, char **outStr, int outStrSize) {
@@ -58,3 +59,51 @@ void generateDirectoryListing(char *folderPath, char *folderName, char **outStr,
     (*outStr)[outStrSize - 1] = '\0';
 }
 #endif
+
+#include "zlib.h"
+
+#define COMPRESSION_CHUNK_SIZE 8192
+
+bool acceptsGzipEncoding(const char *acceptEncoding) {
+    return strstr(acceptEncoding, "gzip") != NULL;
+}
+
+// note: we expect that outFileName is a pointer to fileName with enough space to hold the additional .gz extension, and that acceptEncoding is a string containing the value of the Accept-Encoding header from the request
+char *compressFile(char *fileName, char **outFileName, const char *acceptEncoding, bool *successfullyCompressed) {
+    *successfullyCompressed = false;
+    if (!acceptsGzipEncoding(acceptEncoding)) {
+        printf("[-] Client does not support gzip encoding. Skipping compression for file: %s\n", fileName);
+        return fileName; // client doesn't support gzip encoding, return original file
+    }
+
+    char buffer[COMPRESSION_CHUNK_SIZE];
+    size_t bytesRead;
+    FILE *inputFile = fopen(fileName, "rb");
+    if (inputFile == NULL) {
+        fprintf(stderr, "Error opening input file for compression\n");
+        return fileName; // just return original file
+    }
+
+    strcat(*outFileName, ".gz");
+    gzFile outputFile = gzopen(*outFileName, "wb");
+    if (outputFile == NULL) {
+        fprintf(stderr, "Error opening gzip file for writing\n");
+        fclose(inputFile);
+        return fileName; // return still uncompressed file if we fail to create compressed version
+    }
+    while ((bytesRead = fread(buffer, 1, sizeof(buffer), inputFile)) > 0) {
+        if (gzwrite(outputFile, buffer, bytesRead) < 0) {
+            fprintf(stderr, "Error writing to gzip file\n");
+            // Handle error, close files
+            fclose(inputFile);
+            gzclose(outputFile);
+            return fileName; // return still uncompressed file if we fail to create compressed version
+        }
+    }
+
+    gzclose(outputFile);
+    fclose(inputFile);
+
+    *successfullyCompressed = true;
+    return *outFileName;
+}

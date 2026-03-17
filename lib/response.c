@@ -1,6 +1,9 @@
+#include <sys/types.h>
+#include <sys/socket.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
+#include <stdlib.h>
 
 #include "fields.h"
 #include "fileutil.h"
@@ -12,6 +15,37 @@
 
 // IMPORTANT NOTE: \r\n is the line ending expected by HTTP
 #define STATUS_LINE_MAXLEN 8000
+
+HttpResponse *initializeResponse() {
+    HttpResponse *response = malloc(sizeof(HttpResponse));
+    if (response == NULL) {
+        printf("[-] Failed to allocate memory for HTTP response");
+        exit(EXIT_FAILURE);
+    }
+
+    response->bodyLen = 0;
+    response->encoding = CONTENT_ENCODING_NONE;
+    response->statusLine = malloc(sizeof(StatusLine));
+	if (response->statusLine == NULL) {
+		printf("[-] Failed to allocate memory for HTTP response status line");
+		free(response);
+		exit(EXIT_FAILURE);
+	}
+
+    memset(response->body, 0, CONTENT_MAXLEN);
+    memset(response->fileName, 0, SITE_PATH_MAX);
+    return response;
+}
+
+void freeResponse(HttpResponse *response) {
+    if (response->headers != NULL) {
+        hashmap_free(response->headers);
+    }
+    if (response->statusLine != NULL) {
+        free(response->statusLine);
+    }
+    free(response);
+}
 
 void createHeaderLines(char **buf, struct hashmap *headers)
 {
@@ -34,33 +68,44 @@ void createHeaderLines(char **buf, struct hashmap *headers)
 	printf("[+] Finished processing headers. Final header lines buffer: \n%s\n", *buf);
 }
 
-void createResponseText(HttpResponse *response, char *out) {
-		char responseBuf[HTTP_RESPONSE_MAXLEN];
+// Status line + headers
+void sendResponse(char *buffer, size_t bufferSize, int clientfd) {
+    ssize_t total = 0;
+    long int bufferLen = (long int)bufferSize;
+    while (total < bufferLen) {
+        ssize_t sent = send(clientfd, buffer + total, bufferLen - total, 0);
+        if (sent == -1) {
+            perror("[-] Failed to send response!");
+            break;
+        } else if (sent == 0) {
+            printf("[-] Connection closed by client while sending response\n");
+            break; // connection closed
+        }
+        total += sent;
+    }
+    printf("Sent response!\n");
+}
 
-    // create status line
-		char statusLineBuf[STATUS_LINE_MAXLEN];
-		StatusLine *statusLine = response->statusLine;
+void sendStatusLine(HttpResponse *response, int clientfd) {
+    char statusLineBuf[STATUS_LINE_MAXLEN];
+    StatusLine *statusLine = response->statusLine;
     char *versionStr = getStrFromVersion(statusLine->version);
-		memset(statusLineBuf, 0, STATUS_LINE_MAXLEN);
-    snprintf(statusLineBuf, STATUS_LINE_MAXLEN-1, "%s %u %s",
-				versionStr, statusLine->statusCode, statusLine->reasonPhrase);
-		statusLineBuf[STATUS_LINE_MAXLEN-1] = '\0';
+    memset(statusLineBuf, 0, STATUS_LINE_MAXLEN);
+    snprintf(statusLineBuf, STATUS_LINE_MAXLEN-1, "%s %u %s\r\n",
+             versionStr, statusLine->statusCode, statusLine->reasonPhrase);
+    sendResponse(statusLineBuf, strlen(statusLineBuf), clientfd);
+}
 
-		char headerLines[HTTP_RESPONSE_MAXLEN];
-		memset(headerLines, 0, HTTP_RESPONSE_MAXLEN);
-		char *headerLinesPtr = headerLines;
-		createHeaderLines(&headerLinesPtr, response->headers);
+void sendHeaders(HttpResponse *response, int clientfd) {
+    char headerLines[HTTP_RESPONSE_MAXLEN];
+    memset(headerLines, 0, HTTP_RESPONSE_MAXLEN);
+    char *headerLinesPtr = headerLines;
+    createHeaderLines(&headerLinesPtr, response->headers);
+    sendResponse(headerLines, strlen(headerLines), clientfd);
+}
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wformat-truncation"
-		snprintf(responseBuf, HTTP_RESPONSE_MAXLEN-1, "%s\r\n%s\r\n%s",
-				statusLineBuf, headerLines, response->body);
-#pragma GCC diagnostic pop
-
-		// TODO: replace wth strncpy
-		strcpy(out, responseBuf);
-
-        printf("Finished creating response text!\n");
+void sendBody(HttpResponse *response, int clientfd) {
+    sendResponse(response->body, response->bodyLen, clientfd);
 }
 
 // TODO: this should be moved to request.c since it's more about processing the request than generating the response
@@ -129,6 +174,21 @@ struct hashmap *generateResponseHeaders(HttpRequest *request, HttpResponse *resp
 	Field contentLengthHeader = createField("Content-Length", contentLengthStr);
 	hashmap_set(headers, &contentLengthHeader);
 
+    if (response->encoding != CONTENT_ENCODING_NONE) {
+        char contentEncodingStr[20];
+        if (response->encoding == CONTENT_ENCODING_GZIP) {
+            strncpy(contentEncodingStr, "gzip", 20);
+        } else if (response->encoding == CONTENT_ENCODING_DEFLATE_GZIP) {
+            strncpy(contentEncodingStr, "deflate", 20);
+        } else {
+            printf("[-] Invalid content encoding in response object: %d\n", response->encoding);
+            exit(EXIT_FAILURE);
+        }
+
+        Field contentEncodingHeader = createField("Content-Encoding", contentEncodingStr);
+        hashmap_set(headers, &contentEncodingHeader);
+    }
+
 	return headers;
 }
 
@@ -138,7 +198,7 @@ void generate404(char **buf, int max_size, const char *site_root) {
     filePath[SITE_PATH_MAX] = '\0';
 
 
-    FILE *f = fopen(filePath, "r");
+    FILE *f = fopen(filePath, "rb");
     if (f == NULL) {
         strncpy(*buf, "<h1>404 Not Found</h1>", max_size-1);
         (*buf)[max_size-1] = '\0';
@@ -166,7 +226,7 @@ int loadDirectoryBrowsing(HttpResponse *response, char *filePath) {
     return 200;
 }
 
-int loadFileFromSiteRoot(const char *site_root, HttpResponse *response, size_t outBufSize, bool directory_browsing) {
+int loadFileFromSiteRoot(const char *site_root, HttpRequest *request, HttpResponse *response, size_t outBufSize, bool directory_browsing) {
     printf("[+] Loading file from site root. Site root: %s, target: %s\n", site_root, response->fileName);
     if (strcmp(response->fileName, "/") == 0) {
         strncpy(response->fileName, "/index.html", SITE_PATH_MAX);
@@ -188,7 +248,21 @@ int loadFileFromSiteRoot(const char *site_root, HttpResponse *response, size_t o
         return loadDirectoryBrowsing(response, filePath);
     }
 
-    FILE *f = fopen(filePath, "r");
+    // const char *acceptEncoding = getHeader(request->headers, "Accept-Encoding");
+    // char *filePathPtr = filePath;
+    // bool successfullyCompressed = false;
+    // char *compressedFile = compressFile(filePath, &filePathPtr, acceptEncoding, &successfullyCompressed);
+
+    // if (successfullyCompressed) {
+    //     response->encoding = CONTENT_ENCODING_DEFLATE_GZIP;
+    //     printf("[+] Successfully compressed file: %s\n", filePath);
+    // } else {
+    //     printf("[+] Serving uncompressed file: %s\n", filePath);
+    // }
+
+    // FILE *f = fopen(compressedFile, "rb");
+    (void)request;
+    FILE *f = fopen(filePath, "rb");
     if (f == NULL) {
         make404Response(response, filePath, outBufSize, site_root);
         return 404;
@@ -207,7 +281,7 @@ void generateResponse(HttpResponse *response, HttpRequest *request, char *site_r
     strncpy(response->fileName, url, SITE_PATH_MAX-1);
     response->fileName[SITE_PATH_MAX-1] = '\0';
 
-    response->statusLine->statusCode = loadFileFromSiteRoot(site_root, response, CONTENT_MAXLEN, directory_browsing);
+    response->statusLine->statusCode = loadFileFromSiteRoot(site_root, request, response, CONTENT_MAXLEN, directory_browsing);
     response->statusLine->version = HTTP11;
 
     char *reasonPhrase = "";

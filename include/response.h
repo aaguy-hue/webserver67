@@ -11,7 +11,14 @@
 #define HTTP_RESPONSE_MAXLEN (1<<16)
 #define HTTP_RESPONSE_MAXSIZE (1<<12)
 
+typedef enum {
+	CONTENT_ENCODING_NONE,
+	CONTENT_ENCODING_GZIP,
+	CONTENT_ENCODING_DEFLATE_GZIP, // zlib does both deflate + gzip
+} ContentEncoding;
+
 typedef struct {
+	ContentEncoding encoding;
 	size_t bodyLen;
 	char body[CONTENT_MAXLEN];
 	char fileName[SITE_PATH_MAX];
@@ -19,7 +26,13 @@ typedef struct {
 	struct hashmap *headers;
 } HttpResponse;
 
-void createResponseText(HttpResponse *response, char *out);
+HttpResponse *initializeResponse();
+
+void freeResponse(HttpResponse *response);
+
+void sendStatusLine(HttpResponse *response, int clientfd);
+void sendHeaders(HttpResponse *response, int clientfd);
+void sendBody(HttpResponse *response, int clientfd);
 
 void generateResponse(HttpResponse *response, HttpRequest *request, char *server_root, bool directory_browsing);
 
