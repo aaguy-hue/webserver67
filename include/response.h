@@ -8,9 +8,6 @@
 // we include request.h since there's some common things
 // such as the content maxlen
 
-#define HTTP_RESPONSE_MAXLEN (1<<16)
-#define HTTP_RESPONSE_MAXSIZE (1<<12)
-
 typedef enum {
 	CONTENT_ENCODING_NONE,
 	CONTENT_ENCODING_GZIP,

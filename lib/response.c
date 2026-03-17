@@ -15,6 +15,7 @@
 
 // IMPORTANT NOTE: \r\n is the line ending expected by HTTP
 #define STATUS_LINE_MAXLEN 8000
+#define HTTP_HEADER_LINES_MAXLEN (1<<12)
 
 HttpResponse *initializeResponse() {
     HttpResponse *response = malloc(sizeof(HttpResponse));
@@ -96,8 +97,8 @@ void sendStatusLine(HttpResponse *response, int clientfd) {
 }
 
 void sendHeaders(HttpResponse *response, int clientfd) {
-    char headerLines[HTTP_RESPONSE_MAXLEN];
-    memset(headerLines, 0, HTTP_RESPONSE_MAXLEN);
+    char headerLines[HTTP_HEADER_LINES_MAXLEN];
+    memset(headerLines, 0, HTTP_HEADER_LINES_MAXLEN);
     char *headerLinesPtr = headerLines;
     createHeaderLines(&headerLinesPtr, response->headers);
     sendResponse(headerLines, strlen(headerLines), clientfd);
