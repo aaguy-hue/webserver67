@@ -18,9 +18,23 @@ simply the first line, but it's complicated in later versions so I've decided to
 only support HTTP/1.1 and earlier
 
 
+Cleaner code:
+- Response struct should not store body
+  - Instead, we simply store the path to the file (completed!)
+  - Set path to file to 404 if file DNE
+  - sendBody() should read the file in chunks and send it
+    - This allows us to send larger files without using huge amounts of RAM!
+    - This paves the way for chunked transfer coding in future
+- index.html file in each directory should matter
+  - Right now we only process the top-level index.md file
+
+
+Possible ideas:
+- Subdirectories can have 404.html files
+  - Basically the 404.html that's the closest in the file tree to yours would be used (ex: if someone goes to root/subdir/subdir/doesntexist.html, we'll check for root/subdir/subdir/404.html, then root/subdir/404.html, then root/404.html)
+
 
 
 Other:
 1. Cleanup is currently very bad
-  a. Since other functions can exit(), they don't clean up the sockets
-  b. Instead, I should properly handle this by returning error values then handling this in the main function
+  a. I should properly handle this by returning error values then handling this in the main function
