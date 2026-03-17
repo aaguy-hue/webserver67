@@ -211,8 +211,8 @@ void make404Response(HttpResponse *response, char *filePath, size_t outBufSize, 
     fprintf(stderr, "[-] Failed to open file at path: %s\n", filePath);
     uint8_t *bodyPtr = response->body;
     generate404((char **)&bodyPtr, outBufSize, site_root);
-    strncpy(response->fileName, "/404.html", SITE_PATH_MAX);
-    response->fileName[SITE_PATH_MAX] = '\0';
+    strncpy(response->pathToFile, "/404.html", SITE_PATH_MAX);
+    response->pathToFile[SITE_PATH_MAX] = '\0';
 }
 
 int loadDirectoryBrowsing(HttpResponse *response, char *filePath) {
@@ -231,36 +231,34 @@ int loadFileFromSiteRoot(ServerConfig *cfg, HttpRequest *request, HttpResponse *
         response->fileName[SITE_PATH_MAX] = '\0';
     }
 
-    char filePath[SITE_PATH_MAX + 200];
-    snprintf(filePath, SITE_PATH_MAX * 2, "%s%s", cfg->site_root, response->fileName);
-    filePath[SITE_PATH_MAX + 200] = '\0';
+    snprintf(response->pathToFile, SITE_PATH_MAX * 2, "%s%s", cfg->site_root, response->fileName);
+    response->pathToFile[SITE_PATH_MAX + 200] = '\0';
 
-    if (isDirectory(filePath)) {
-        printf("[+] Target is a directory. File path: %s\n", filePath);
+    if (isDirectory(response->pathToFile)) {
+        printf("[+] Target is a directory. File path: %s\n", response->pathToFile);
         if (!cfg->directory_browsing) {
-            printf("[-] Directory browsing is disabled. Cannot load directory at path: %s\n", filePath);
-            make404Response(response, filePath, outBufSize, cfg->site_root);
+            printf("[-] Directory browsing is disabled. Cannot load directory at path: %s\n", response->pathToFile);
+            make404Response(response, response->pathToFile, outBufSize, cfg->site_root);
             return 404;
         }
-        printf("[+] Directory browsing is enabled. Generating directory listing for path: %s\n", filePath);
-        return loadDirectoryBrowsing(response, filePath);
+        printf("[+] Directory browsing is enabled. Generating directory listing for path: %s\n", response->pathToFile);
+        return loadDirectoryBrowsing(response, response->pathToFile);
     }
 
     const char *acceptEncoding = getHeader(request->headers, "Accept-Encoding");
-    char *filePathPtr = filePath;
-    bool successfullyCompressed = false;
-    char *compressedFile = compressFile(filePath, &filePathPtr, acceptEncoding, &successfullyCompressed);
+    char *filePathPtr = response->pathToFile;
+    bool successfullyCompressed = compressFile(&filePathPtr, acceptEncoding);
 
     if (successfullyCompressed) {
         response->encoding = CONTENT_ENCODING_GZIP;
-        printf("[+] Successfully compressed file: %s\n", filePath);
+        printf("[+] Successfully compressed file: %s\n", response->pathToFile);
     } else {
-        printf("[+] Serving uncompressed file: %s\n", filePath);
+        printf("[+] Serving uncompressed file: %s\n", response->pathToFile);
     }
 
-    FILE *f = fopen(compressedFile, "rb");
+    FILE *f = fopen(response->pathToFile, "rb");
     if (f == NULL) {
-        make404Response(response, filePath, outBufSize, cfg->site_root);
+        make404Response(response, response->pathToFile, outBufSize, cfg->site_root);
         return 404;
     }
 

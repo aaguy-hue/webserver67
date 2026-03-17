@@ -7,6 +7,6 @@ bool isDirectory(const char *path);
 
 void generateDirectoryListing(char *folderPath, char *folderName, char **outStr, int outStrSize);
 
-char *compressFile(char *fileName, char **outFileName, const char *acceptEncoding, bool *successfullyCompressed);
+bool compressFile(char **inputFileName, const char *acceptEncoding);
 
 #endif

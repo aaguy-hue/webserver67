@@ -3,7 +3,7 @@
 
 #include <stdbool.h>
 
-#define SITE_PATH_MAX 250
+#define SITE_PATH_MAX 500
 
 typedef struct ServerConfig {
   bool directory_browsing;

@@ -68,28 +68,35 @@ bool acceptsGzipEncoding(const char *acceptEncoding) {
     return strstr(acceptEncoding, "gzip") != NULL;
 }
 
+#include "config.h"
+
 // note: we expect that outFileName is a pointer to fileName with enough space to hold the additional .gz extension, and that acceptEncoding is a string containing the value of the Accept-Encoding header from the request
-char *compressFile(char *fileName, char **outFileName, const char *acceptEncoding, bool *successfullyCompressed) {
-    *successfullyCompressed = false;
+// if the client supports gzip encoding and we successfully create a compressed version of the file, we update the fileName to point to the compressed version and return true, otherwise we return false and leave fileName unchanged
+bool compressFile(char **inputFileName, const char *acceptEncoding) {
     if (!acceptsGzipEncoding(acceptEncoding)) {
-        printf("[-] Client does not support gzip encoding. Skipping compression for file: %s\n", fileName);
-        return fileName; // client doesn't support gzip encoding, return original file
+        printf("[-] Client does not support gzip encoding. Skipping compression for file: %s\n", *inputFileName);
+        return false;
     }
+
+    // todo: hardcoding in SITE_PATH_MAX + 200 is really gross, should probably define a constant for this
+    char outputFileName[SITE_PATH_MAX + 200];
+    strncpy(outputFileName, *inputFileName, SITE_PATH_MAX + 200);
+    outputFileName[SITE_PATH_MAX + 200] = '\0';
 
     char buffer[COMPRESSION_CHUNK_SIZE];
     size_t bytesRead;
-    FILE *inputFile = fopen(fileName, "rb");
+    FILE *inputFile = fopen(*inputFileName, "rb");
     if (inputFile == NULL) {
         fprintf(stderr, "Error opening input file for compression\n");
-        return fileName; // just return original file
+        return false;
     }
 
-    strcat(*outFileName, ".gz");
-    gzFile outputFile = gzopen(*outFileName, "wb");
+    strcat(outputFileName, ".gz");
+    gzFile outputFile = gzopen(outputFileName, "wb");
     if (outputFile == NULL) {
         fprintf(stderr, "Error opening gzip file for writing\n");
         fclose(inputFile);
-        return fileName; // return still uncompressed file if we fail to create compressed version
+        return false; // return still uncompressed file if we fail to create compressed version
     }
     while ((bytesRead = fread(buffer, 1, sizeof(buffer), inputFile)) > 0) {
         if (gzwrite(outputFile, buffer, bytesRead) < 0) {
@@ -97,13 +104,14 @@ char *compressFile(char *fileName, char **outFileName, const char *acceptEncodin
             // Handle error, close files
             fclose(inputFile);
             gzclose(outputFile);
-            return fileName; // return still uncompressed file if we fail to create compressed version
+            return false; // return still uncompressed file if we fail to create compressed version
         }
     }
 
     gzclose(outputFile);
     fclose(inputFile);
 
-    *successfullyCompressed = true;
-    return *outFileName;
+    strncpy(*inputFileName, outputFileName, SITE_PATH_MAX + 200);
+    (*inputFileName)[SITE_PATH_MAX + 200] = '\0';
+    return true;
 }
