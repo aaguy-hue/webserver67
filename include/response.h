@@ -14,7 +14,6 @@
 typedef enum {
 	CONTENT_ENCODING_NONE,
 	CONTENT_ENCODING_GZIP,
-	CONTENT_ENCODING_DEFLATE_GZIP, // zlib does both deflate + gzip
 } ContentEncoding;
 
 typedef struct {

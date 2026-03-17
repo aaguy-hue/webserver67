@@ -178,8 +178,6 @@ struct hashmap *generateResponseHeaders(HttpRequest *request, HttpResponse *resp
         char contentEncodingStr[20];
         if (response->encoding == CONTENT_ENCODING_GZIP) {
             strncpy(contentEncodingStr, "gzip", 20);
-        } else if (response->encoding == CONTENT_ENCODING_DEFLATE_GZIP) {
-            strncpy(contentEncodingStr, "gzip", 20);
         } else {
             printf("[-] Invalid content encoding in response object: %d\n", response->encoding);
             exit(EXIT_FAILURE);
@@ -254,7 +252,7 @@ int loadFileFromSiteRoot(const char *site_root, HttpRequest *request, HttpRespon
     char *compressedFile = compressFile(filePath, &filePathPtr, acceptEncoding, &successfullyCompressed);
 
     if (successfullyCompressed) {
-        response->encoding = CONTENT_ENCODING_DEFLATE_GZIP;
+        response->encoding = CONTENT_ENCODING_GZIP;
         printf("[+] Successfully compressed file: %s\n", filePath);
     } else {
         printf("[+] Serving uncompressed file: %s\n", filePath);
