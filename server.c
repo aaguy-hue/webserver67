@@ -162,7 +162,7 @@ int main() {
 
 		printf("\nContent:\n%s\n", request.content);
 
-		generateResponse(response, &request, cfg->site_root, cfg->directory_browsing);
+		generateResponse(response, &request, cfg);
 		printf("[+] Response generated!\n");
 
 

@@ -68,12 +68,11 @@ void createHeaderLines(char **buf, struct hashmap *headers)
 	printf("[+] Finished processing headers. Final header lines buffer: \n%s\n", *buf);
 }
 
-// Status line + headers
-void sendResponse(char *buffer, size_t bufferSize, int clientfd) {
+void sendResponse(const void *buffer, size_t bufferSize, int clientfd) {
     ssize_t total = 0;
     long int bufferLen = (long int)bufferSize;
     while (total < bufferLen) {
-        ssize_t sent = send(clientfd, buffer + total, bufferLen - total, 0);
+        ssize_t sent = send(clientfd, (const uint8_t *)buffer + total, bufferLen - total, 0);
         if (sent == -1) {
             perror("[-] Failed to send response!");
             break;
@@ -209,16 +208,16 @@ void generate404(char **buf, int max_size, const char *site_root) {
 
 void make404Response(HttpResponse *response, char *filePath, size_t outBufSize, const char *site_root) {
     fprintf(stderr, "[-] Failed to open file at path: %s\n", filePath);
-    char *bodyPtr = response->body;
-    generate404(&bodyPtr, outBufSize, site_root);
+    uint8_t *bodyPtr = response->body;
+    generate404((char **)&bodyPtr, outBufSize, site_root);
     strncpy(response->fileName, "/404.html", SITE_PATH_MAX);
     response->fileName[SITE_PATH_MAX] = '\0';
 }
 
 int loadDirectoryBrowsing(HttpResponse *response, char *filePath) {
-    char *bodyPtr = response->body;
-    generateDirectoryListing(filePath, response->fileName, &bodyPtr, CONTENT_MAXLEN);
-    response->bodyLen = strlen(response->body);
+    uint8_t *bodyPtr = response->body;
+    generateDirectoryListing(filePath, response->fileName, (char **)&bodyPtr, CONTENT_MAXLEN);
+    response->bodyLen = strlen((char *)response->body);
     strncpy(response->fileName, "/directory.html", SITE_PATH_MAX); // ensure content type is text/html
     response->fileName[SITE_PATH_MAX] = '\0';
     return 200;
@@ -232,7 +231,7 @@ int loadFileFromSiteRoot(ServerConfig *cfg, HttpRequest *request, HttpResponse *
     }
 
     char filePath[SITE_PATH_MAX + 200];
-    snprintf(filePath, SITE_PATH_MAX + 200, "%s%s", cfg->site_root, response->fileName);
+    snprintf(filePath, SITE_PATH_MAX * 2, "%s%s", cfg->site_root, response->fileName);
     filePath[SITE_PATH_MAX + 200] = '\0';
 
     if (isDirectory(filePath)) {
