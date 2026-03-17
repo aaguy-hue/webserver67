@@ -179,7 +179,7 @@ struct hashmap *generateResponseHeaders(HttpRequest *request, HttpResponse *resp
         if (response->encoding == CONTENT_ENCODING_GZIP) {
             strncpy(contentEncodingStr, "gzip", 20);
         } else if (response->encoding == CONTENT_ENCODING_DEFLATE_GZIP) {
-            strncpy(contentEncodingStr, "deflate", 20);
+            strncpy(contentEncodingStr, "gzip", 20);
         } else {
             printf("[-] Invalid content encoding in response object: %d\n", response->encoding);
             exit(EXIT_FAILURE);
@@ -248,21 +248,19 @@ int loadFileFromSiteRoot(const char *site_root, HttpRequest *request, HttpRespon
         return loadDirectoryBrowsing(response, filePath);
     }
 
-    // const char *acceptEncoding = getHeader(request->headers, "Accept-Encoding");
-    // char *filePathPtr = filePath;
-    // bool successfullyCompressed = false;
-    // char *compressedFile = compressFile(filePath, &filePathPtr, acceptEncoding, &successfullyCompressed);
+    const char *acceptEncoding = getHeader(request->headers, "Accept-Encoding");
+    char *filePathPtr = filePath;
+    bool successfullyCompressed = false;
+    char *compressedFile = compressFile(filePath, &filePathPtr, acceptEncoding, &successfullyCompressed);
 
-    // if (successfullyCompressed) {
-    //     response->encoding = CONTENT_ENCODING_DEFLATE_GZIP;
-    //     printf("[+] Successfully compressed file: %s\n", filePath);
-    // } else {
-    //     printf("[+] Serving uncompressed file: %s\n", filePath);
-    // }
+    if (successfullyCompressed) {
+        response->encoding = CONTENT_ENCODING_DEFLATE_GZIP;
+        printf("[+] Successfully compressed file: %s\n", filePath);
+    } else {
+        printf("[+] Serving uncompressed file: %s\n", filePath);
+    }
 
-    // FILE *f = fopen(compressedFile, "rb");
-    (void)request;
-    FILE *f = fopen(filePath, "rb");
+    FILE *f = fopen(compressedFile, "rb");
     if (f == NULL) {
         make404Response(response, filePath, outBufSize, site_root);
         return 404;
