@@ -250,7 +250,7 @@ void make404Response(HttpResponse *response, size_t outBufSize, const char *site
 int loadDirectoryBrowsing(HttpResponse *response, char *filePath) {
     char *bodyPtr = response->specialBody;
     response->specialBodyUsed = true;
-    generateDirectoryListing(filePath, response->fileName, &bodyPtr, CONTENT_MAXLEN);
+    generateDirectoryListing(filePath, response->fileName, &bodyPtr, SPECIAL_BODY_MAXLEN);
     strncpy(response->fileName, "/directory.html", SITE_PATH_MAX); // ensure content type is text/html
     response->fileName[SITE_PATH_MAX] = '\0';
     return 200;
@@ -303,7 +303,7 @@ void generateResponse(HttpResponse *response, HttpRequest *request, ServerConfig
     response->statusLine->version = HTTP11;
 
     if (response->statusLine->statusCode == 404) {
-        make404Response(response, CONTENT_MAXLEN, cfg->site_root);
+        make404Response(response, SPECIAL_BODY_MAXLEN, cfg->site_root);
     }
 
     char *reasonPhrase = "";

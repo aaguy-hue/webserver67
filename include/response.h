@@ -13,6 +13,8 @@ typedef enum {
 	CONTENT_ENCODING_GZIP,
 } ContentEncoding;
 
+#define SPECIAL_BODY_MAXLEN (1<<11) // 2KiB for directory browsing and 404
+
 typedef struct {
 	char fileName[SITE_PATH_MAX];
 	char pathToFile[SITE_PATH_MAX+200];
@@ -25,7 +27,7 @@ typedef struct {
 	// length of that content. specialBody should *not* be containing binary data since it's only 
 	// used for directory browsing and 404 responses, which are always text/html, so we can safely 
 	// treat it as a null-terminated string when generating the response.
-	char specialBody[CONTENT_MAXLEN];
+	char specialBody[SPECIAL_BODY_MAXLEN];
 	bool specialBodyUsed;
 
 	ContentEncoding encoding;
