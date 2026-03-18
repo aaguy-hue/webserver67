@@ -18,7 +18,11 @@ simply the first line, but it's complicated in later versions so I've decided to
 only support HTTP/1.1 and earlier
 
 
-Cleaner code:
+Things that need to be done:
+- Store request content on heap
+  - Use Content-Length header to determine the size and allocate it dynamically rather than using a fixed-size buffer as we do rn
+- Handle videos (very large files)
+  - Videos seem to cause the server to crash after sending a lot of chunks
 - index.html file in each directory should matter
   - Right now we only process the top-level index.md file
 - Properly exit out of the program
