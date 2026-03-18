@@ -12,6 +12,7 @@ A simple webserver written in C. See `todo.txt` for immediate priorities for wha
 
 ## Current Capabilities
 - Serve static files over HTTP
+  - Can serve many common filetypes used on the web
 - Directory browsing
 - Receives HTTP requests
 - Prepares a response
@@ -20,8 +21,9 @@ A simple webserver written in C. See `todo.txt` for immediate priorities for wha
 - Reads YAML config files
 
 ## Planned Capabilities
+- Chunked transfer coding in responses for videos and other large files
+  - NOTE: There are no plans for receiving chunked transfer coding from clients
 - Process more types of request headers
-- Set correct Content-Type header in response
 - Reverse proxy
 - Allow subdirectories to have their own index.html files
 
