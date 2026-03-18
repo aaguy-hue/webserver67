@@ -191,6 +191,11 @@ struct hashmap *generateResponseHeaders(HttpRequest *request, HttpResponse *resp
 	(void)request; // todo: use request headers to generate response headers
 	struct hashmap *headers = createFieldHashmap(10);
 
+    // This is specified explicitly even though it's the default in HTTP/1.1 for compatibility
+    // https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Connection
+    Field connectionHeader = createField("Connection", "Keep-Alive");
+    hashmap_set(headers, &connectionHeader);
+
     char *contentType = generateContentType(response->fileName);
 	Field contentTypeHeader = createField("Content-Type", contentType);
 	hashmap_set(headers, &contentTypeHeader);
