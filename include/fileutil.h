@@ -9,4 +9,8 @@ void generateDirectoryListing(char *folderPath, char *folderName, char **outStr,
 
 bool compressFile(char **inputFileName, const char *acceptEncoding);
 
+bool fileExists(const char *path);
+
+long long fileSize(const char *path);
+
 #endif

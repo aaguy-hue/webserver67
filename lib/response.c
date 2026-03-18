@@ -24,7 +24,6 @@ HttpResponse *initializeResponse() {
         exit(EXIT_FAILURE);
     }
 
-    response->bodyLen = 0;
     response->encoding = CONTENT_ENCODING_NONE;
     response->statusLine = malloc(sizeof(StatusLine));
 	if (response->statusLine == NULL) {
@@ -33,7 +32,7 @@ HttpResponse *initializeResponse() {
 		exit(EXIT_FAILURE);
 	}
 
-    memset(response->body, 0, CONTENT_MAXLEN);
+    memset(response->specialBody, 0, CONTENT_MAXLEN);
     memset(response->fileName, 0, SITE_PATH_MAX);
     return response;
 }
@@ -104,8 +103,27 @@ void sendHeaders(HttpResponse *response, int clientfd) {
     sendResponse(headerLines, strlen(headerLines), clientfd);
 }
 
+#define SEND_FILE_CHUNK_SIZE (1 << 14) // 16KB
+
 void sendBody(HttpResponse *response, int clientfd) {
-    sendResponse(response->body, response->bodyLen, clientfd);
+    if (response->specialBodyUsed) {
+        sendResponse(response->specialBody, strlen(response->specialBody), clientfd);
+        return;
+    }
+
+    FILE *f = fopen(response->pathToFile, "rb");
+    if (f == NULL) { // shouldn't happen since we already check for file existence in generateResponse
+        printf("[-] Failed to open file at path: %s. Very strange.\n", response->pathToFile);
+        return;
+    }
+
+    size_t bytesRead;
+    uint8_t buffer[SEND_FILE_CHUNK_SIZE];
+    while ((bytesRead= fread(buffer, 1, SEND_FILE_CHUNK_SIZE, f)) > 0) {
+        sendResponse(buffer, bytesRead, clientfd);
+    }
+    
+    fclose(f);
 }
 
 // TODO: this should be moved to request.c since it's more about processing the request than generating the response
@@ -161,6 +179,14 @@ char *generateContentType(const char *target) {
     }
 }
 
+size_t getBodyLength(HttpResponse *response) {
+    if (response->specialBodyUsed) {
+        return strlen(response->specialBody);
+    } else {
+        return fileSize(response->pathToFile);
+    }
+}
+
 struct hashmap *generateResponseHeaders(HttpRequest *request, HttpResponse *response) {
 	(void)request; // todo: use request headers to generate response headers
 	struct hashmap *headers = createFieldHashmap(10);
@@ -170,7 +196,7 @@ struct hashmap *generateResponseHeaders(HttpRequest *request, HttpResponse *resp
 	hashmap_set(headers, &contentTypeHeader);
 
     char contentLengthStr[25];
-    snprintf(contentLengthStr, 25, "%zu", response->bodyLen);
+    snprintf(contentLengthStr, 25, "%zu", getBodyLength(response));
 	Field contentLengthHeader = createField("Content-Length", contentLengthStr);
 	hashmap_set(headers, &contentLengthHeader);
 
@@ -190,7 +216,7 @@ struct hashmap *generateResponseHeaders(HttpRequest *request, HttpResponse *resp
 	return headers;
 }
 
-void generate404(char **buf, int max_size, const char *site_root) {
+void generate404PageInMemory(char **buf, int max_size, const char *site_root) {
     char filePath[SITE_PATH_MAX + 1];
     snprintf(filePath, SITE_PATH_MAX, "%s/404.html", site_root);
     filePath[SITE_PATH_MAX] = '\0';
@@ -207,24 +233,30 @@ void generate404(char **buf, int max_size, const char *site_root) {
     }
 }
 
-void make404Response(HttpResponse *response, char *filePath, size_t outBufSize, const char *site_root) {
-    fprintf(stderr, "[-] Failed to open file at path: %s\n", filePath);
-    uint8_t *bodyPtr = response->body;
-    generate404((char **)&bodyPtr, outBufSize, site_root);
+void make404Response(HttpResponse *response, size_t outBufSize, const char *site_root) {
+    fprintf(stderr, "[-] Failed to open file at path: %s\n", response->pathToFile);
+
     strncpy(response->pathToFile, "/404.html", SITE_PATH_MAX);
     response->pathToFile[SITE_PATH_MAX] = '\0';
+
+    // If no 404 file, generate it in-memory
+    if (!fileExists(response ->pathToFile)) {
+        char *bodyPtr = response->specialBody;
+        response->specialBodyUsed = true;
+        generate404PageInMemory(&bodyPtr, outBufSize, site_root);
+    }
 }
 
 int loadDirectoryBrowsing(HttpResponse *response, char *filePath) {
-    uint8_t *bodyPtr = response->body;
-    generateDirectoryListing(filePath, response->fileName, (char **)&bodyPtr, CONTENT_MAXLEN);
-    response->bodyLen = strlen((char *)response->body);
+    char *bodyPtr = response->specialBody;
+    response->specialBodyUsed = true;
+    generateDirectoryListing(filePath, response->fileName, &bodyPtr, CONTENT_MAXLEN);
     strncpy(response->fileName, "/directory.html", SITE_PATH_MAX); // ensure content type is text/html
     response->fileName[SITE_PATH_MAX] = '\0';
     return 200;
 }
 
-int loadFileFromSiteRoot(ServerConfig *cfg, HttpRequest *request, HttpResponse *response, size_t outBufSize) {
+int loadFileFromSiteRoot(ServerConfig *cfg, HttpRequest *request, HttpResponse *response) {
     printf("[+] Loading file from site root. Site root: %s, target: %s\n", cfg->site_root, response->fileName);
     if (strcmp(response->fileName, "/") == 0) {
         strncpy(response->fileName, "/index.html", SITE_PATH_MAX);
@@ -238,7 +270,6 @@ int loadFileFromSiteRoot(ServerConfig *cfg, HttpRequest *request, HttpResponse *
         printf("[+] Target is a directory. File path: %s\n", response->pathToFile);
         if (!cfg->directory_browsing) {
             printf("[-] Directory browsing is disabled. Cannot load directory at path: %s\n", response->pathToFile);
-            make404Response(response, response->pathToFile, outBufSize, cfg->site_root);
             return 404;
         }
         printf("[+] Directory browsing is enabled. Generating directory listing for path: %s\n", response->pathToFile);
@@ -256,17 +287,10 @@ int loadFileFromSiteRoot(ServerConfig *cfg, HttpRequest *request, HttpResponse *
         printf("[+] Serving uncompressed file: %s\n", response->pathToFile);
     }
 
-    FILE *f = fopen(response->pathToFile, "rb");
-    if (f == NULL) {
-        make404Response(response, response->pathToFile, outBufSize, cfg->site_root);
+    if (!fileExists(response->pathToFile)) {
+        printf("[-] File does not exist at path: %s\n", response->pathToFile);
         return 404;
     }
-
-    size_t bytesRead = fread(response->body, 1, outBufSize-1, f);
-    response->body[bytesRead] = '\0';
-    response->bodyLen = (size_t)bytesRead;
-
-    fclose(f);
     return 200;
 }
 
@@ -275,8 +299,12 @@ void generateResponse(HttpResponse *response, HttpRequest *request, ServerConfig
     strncpy(response->fileName, url, SITE_PATH_MAX-1);
     response->fileName[SITE_PATH_MAX-1] = '\0';
 
-    response->statusLine->statusCode = loadFileFromSiteRoot(cfg, request, response, CONTENT_MAXLEN);
+    response->statusLine->statusCode = loadFileFromSiteRoot(cfg, request, response);
     response->statusLine->version = HTTP11;
+
+    if (response->statusLine->statusCode == 404) {
+        make404Response(response, CONTENT_MAXLEN, cfg->site_root);
+    }
 
     char *reasonPhrase = "";
     strncpy(response->statusLine->reasonPhrase, reasonPhrase, REASON_PHRASE_MAXLEN-1);

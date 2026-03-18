@@ -19,6 +19,20 @@ bool isDirectory(const char *path) {
 #endif
 }
 
+bool fileExists(const char *path) {
+    struct stat path_stat;
+    return stat(path, &path_stat) == 0;
+}
+
+long long fileSize(const char *path) {
+    struct stat path_stat;
+    if (stat(path, &path_stat) != 0) {
+        perror("[-] stat failed");
+        return -1;
+    }
+    return (long long) path_stat.st_size;
+}
+
 
 #ifdef _WIN32
 
