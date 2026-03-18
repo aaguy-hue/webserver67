@@ -19,16 +19,11 @@ only support HTTP/1.1 and earlier
 
 
 Cleaner code:
-- Response struct should not store body
-  - Instead, we simply store the path to the file (completed!)
-  - Set path to file to 404 if file DNE
-  - sendBody() should read the file in chunks and send it
-    - This allows us to send larger files without using huge amounts of RAM!
-    - This paves the way for chunked transfer coding in future
 - index.html file in each directory should matter
   - Right now we only process the top-level index.md file
 - Properly exit out of the program
   - At the moment, ctrl+C doesn't do anything half the time, and the other half of the time it causes a segfault. There is no way for the program to exit cleanly
+- Chunked transfer coding
 
 
 Possible ideas:
