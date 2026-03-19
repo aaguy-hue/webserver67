@@ -17,32 +17,13 @@
 #define STATUS_LINE_MAXLEN 8000
 #define HTTP_HEADER_LINES_MAXLEN (1<<12)
 
-HttpResponse *initializeResponse() {
-    HttpResponse *response = malloc(sizeof(HttpResponse));
-    if (response == NULL) {
-        printf("[-] Failed to allocate memory for HTTP response");
-        exit(EXIT_FAILURE);
-    }
-
-    response->encoding = CONTENT_ENCODING_NONE;
-    response->statusLine = malloc(sizeof(StatusLine));
-	if (response->statusLine == NULL) {
-		printf("[-] Failed to allocate memory for HTTP response status line");
-		free(response);
-		exit(EXIT_FAILURE);
-	}
-
-    memset(response->specialBody, 0, SPECIAL_BODY_MAXLEN);
-    memset(response->fileName, 0, SITE_PATH_MAX);
-    return response;
-}
 
 void resetResponse(HttpResponse *response) {
     response->encoding = CONTENT_ENCODING_NONE;
     response->specialBodyUsed = false;
     memset(response->specialBody, 0, SPECIAL_BODY_MAXLEN);
     memset(response->fileName, 0, SITE_PATH_MAX);
-    
+
     if (response->headers != NULL) {
         hashmap_free(response->headers);
         response->headers = NULL;
@@ -61,6 +42,30 @@ void freeResponse(HttpResponse *response) {
     }
     free(response);
 }
+
+HttpResponse *initializeResponse() {
+    HttpResponse *response = malloc(sizeof(HttpResponse));
+    if (response == NULL) {
+        printf("[-] Failed to allocate memory for HTTP response");
+        exit(EXIT_FAILURE);
+    }
+
+    response->encoding = CONTENT_ENCODING_NONE;
+    response->statusLine = malloc(sizeof(StatusLine));
+	if (response->statusLine == NULL) {
+		printf("[-] Failed to allocate memory for HTTP response status line");
+		free(response);
+		exit(EXIT_FAILURE);
+	}
+
+    memset(response->specialBody, 0, SPECIAL_BODY_MAXLEN);
+    memset(response->fileName, 0, SITE_PATH_MAX);
+
+    response->free = &freeResponse;
+    response->reset = &resetResponse;
+    return response;
+}
+
 
 void createHeaderLines(char **buf, struct hashmap *headers)
 {

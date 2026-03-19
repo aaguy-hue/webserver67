@@ -15,7 +15,7 @@ typedef enum {
 
 #define SPECIAL_BODY_MAXLEN (1<<11) // 2KiB for directory browsing and 404
 
-typedef struct {
+typedef struct HttpResponse {
 	char fileName[SITE_PATH_MAX];
 	char pathToFile[SITE_PATH_MAX+200];
 
@@ -33,6 +33,9 @@ typedef struct {
 	ContentEncoding encoding;
 	StatusLine *statusLine;
 	struct hashmap *headers;
+
+	void (*reset) (struct HttpResponse *response);
+	void (*free) (struct HttpResponse *response);
 } HttpResponse;
 
 HttpResponse *initializeResponse();

@@ -45,8 +45,7 @@ int main() {
 	int clientfd = -1;
 	
 	// allocate memory for the request and response objects
-	HttpRequest request;
-	memset(&request, 0, sizeof(HttpRequest));
+	HttpRequest *request = initializeRequest();
 
 	HttpResponse *response = initializeResponse();
 	if (response == NULL || response->statusLine == NULL) {
@@ -146,23 +145,22 @@ int main() {
 			goto cleanup;
 		}
 
-		request.requestLine = &requestLine;
-		printf("[/] HTTP Method: %d\n", requestLine.method);
-		printf("[/] HTTP Target: %s\n", requestLine.target);
-		printf("[/] HTTP Version: %d\n", requestLine.version);
+		request->setRequestLine(request, requestLine);
+		printf("[/] HTTP Method: %d\n", request->requestLine->method);
+		printf("[/] HTTP Target: %s\n", request->requestLine->target);
+		printf("[/] HTTP Version: %d\n", request->requestLine->version);
 
 		//printf("[/] Buffer first byte: %d\n", buf[0]);
 		struct hashmap *headers = readRequest(&bufptr);
-		request.headers = headers;
+		request->headers = headers;
 
 		const char *contentLengthStr = popHeader(headers, "content-length");
 		int contentLength = contentLengthStr && strIsNumeric(contentLengthStr) ? atoi(contentLengthStr) : 0;
-		strncpy(request.content, bufptr, minInt(CONTENT_MAXLEN-1, contentLength));
-		request.content[CONTENT_MAXLEN-1] = '\0';
 
-		printf("\nContent:\n%s\n", request.content);
+		request->setContent(request, bufptr, contentLength);
+		printf("\nContent:\n%s\n", request->content);
 
-		generateResponse(response, &request, cfg);
+		generateResponse(response, request, cfg);
 		printf("[+] Response generated!\n");
 
 
@@ -171,20 +169,8 @@ int main() {
 		sendBody(response, clientfd);
 		printf("Sent response!\n");
 
-
-
-		memset(&request, 0, sizeof(HttpRequest)); // todo: very sus this is literally just a memory leak, fix later I'm too sleepy
-		resetResponse(response);
-
-		// note: don't memset response to 0 bc then it zeros the struct and statusLine pointer and we need to free those later
-		//memset(response, 0, sizeof(HttpResponse));
-
-		if (request.headers != NULL) {
-			hashmap_free(request.headers);
-		}
-		if (response->headers != NULL) {
-			hashmap_free(response->headers);
-		}
+		request->reset(request);
+		response->reset(response);
 
 		if (clientfd > -1) {
 			if (close(clientfd) < 0) {
@@ -196,9 +182,7 @@ int main() {
 
 cleanup:
 	free(cfg);
-	if (request.headers != NULL) {
-		hashmap_free(request.headers);
-	}
+	request->free(request);
 	freeResponse(response);
 	if (clientfd > -1) {
 		if (close(clientfd) < 0) {
