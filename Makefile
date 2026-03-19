@@ -7,10 +7,10 @@ LDIR =./lib
 
 LIBS=-lm
 
-_DEPS = config.h fields.h fileutil.h hashmap.h headers.h request.h response.h startline.h util.h
+_DEPS = arrayliststr.h config.h fields.h fileutil.h hashmap.h headers.h request.h response.h startline.h util.h
 DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
 
-_OBJ = server.o config.o fields.o fileutil.o hashmap.o headers.o response.o startline.o util.o
+_OBJ = server.o arrayliststr.o config.o fields.o fileutil.o hashmap.o headers.o response.o startline.o util.o
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
 
