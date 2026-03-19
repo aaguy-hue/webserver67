@@ -36,7 +36,7 @@ typedef struct {
 } HttpResponse;
 
 HttpResponse *initializeResponse();
-
+void resetResponse(HttpResponse *response);
 void freeResponse(HttpResponse *response);
 
 void sendStatusLine(HttpResponse *response, int clientfd);

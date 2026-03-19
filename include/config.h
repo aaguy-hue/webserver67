@@ -10,8 +10,13 @@ typedef struct ServerConfig {
   unsigned short int port;
 	char address[16];
   char site_root[SITE_PATH_MAX];
+
+  char **compressed_file_types;
+  unsigned compressed_file_types_count;
 } ServerConfig;
 
 ServerConfig *readConfig(char *filePath);
+
+bool fileTypeShouldBeCompressed(ServerConfig *cfg, const char *fileName);
 
 #endif

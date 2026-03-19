@@ -173,8 +173,9 @@ int main() {
 
 
 
-		memset(&request, 0, sizeof(HttpRequest));
-		memset(response->statusLine, 0, sizeof(StatusLine));
+		memset(&request, 0, sizeof(HttpRequest)); // todo: very sus this is literally just a memory leak, fix later I'm too sleepy
+		resetResponse(response);
+
 		// note: don't memset response to 0 bc then it zeros the struct and statusLine pointer and we need to free those later
 		//memset(response, 0, sizeof(HttpResponse));
 

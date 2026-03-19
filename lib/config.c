@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdbool.h>
-//#include <yaml.h>
+#include <stdbool.h>
 #include <string.h>
 #include <cyaml/cyaml.h>
 #include "util.h"
@@ -13,6 +13,10 @@
 //	}
 //	return NULL;
 //}
+
+static const cyaml_schema_value_t compressed_file_type_entry = {
+	CYAML_VALUE_STRING(CYAML_FLAG_POINTER, char, 0, 5),
+};
 
 // mapping at the top level
 static const cyaml_schema_field_t top_mapping_schema[] = {
@@ -31,6 +35,11 @@ static const cyaml_schema_field_t top_mapping_schema[] = {
 	CYAML_FIELD_BOOL(
 		"directory_browsing", CYAML_FLAG_OPTIONAL,
 		ServerConfig, directory_browsing
+	),
+	CYAML_FIELD_SEQUENCE(
+			"compressed_file_types", CYAML_FLAG_POINTER | CYAML_FLAG_OPTIONAL,
+			ServerConfig, compressed_file_types,
+			&compressed_file_type_entry, 0, CYAML_UNLIMITED
 	),
 	CYAML_FIELD_END
 };
@@ -68,3 +77,18 @@ ServerConfig *readConfig(char *filePath) {
 	return config;
 }
 
+bool fileTypeShouldBeCompressed(ServerConfig *cfg, const char *fileName) {
+	if (cfg->compressed_file_types == NULL || cfg->compressed_file_types_count == 0) {
+		return false;
+	}
+
+	for (unsigned i = 0; i < cfg->compressed_file_types_count; i++) {
+		const char *ext = cfg->compressed_file_types[i];
+		size_t extLen = strlen(ext);
+		size_t fileNameLen = strlen(fileName);
+		if (fileNameLen >= extLen && strcmp(fileName + fileNameLen - extLen, ext) == 0) {
+			return true;
+		}
+	}
+	return false;
+}

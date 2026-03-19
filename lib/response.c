@@ -32,9 +32,24 @@ HttpResponse *initializeResponse() {
 		exit(EXIT_FAILURE);
 	}
 
-    memset(response->specialBody, 0, CONTENT_MAXLEN);
+    memset(response->specialBody, 0, SPECIAL_BODY_MAXLEN);
     memset(response->fileName, 0, SITE_PATH_MAX);
     return response;
+}
+
+void resetResponse(HttpResponse *response) {
+    response->encoding = CONTENT_ENCODING_NONE;
+    response->specialBodyUsed = false;
+    memset(response->specialBody, 0, SPECIAL_BODY_MAXLEN);
+    memset(response->fileName, 0, SITE_PATH_MAX);
+    
+    if (response->headers != NULL) {
+        hashmap_free(response->headers);
+        response->headers = NULL;
+    }
+    if (response->statusLine != NULL) {
+        memset(response->statusLine, 0, sizeof(StatusLine));
+    }
 }
 
 void freeResponse(HttpResponse *response) {
@@ -276,15 +291,17 @@ int loadFileFromSiteRoot(ServerConfig *cfg, HttpRequest *request, HttpResponse *
         return loadDirectoryBrowsing(response, response->pathToFile);
     }
 
-    const char *acceptEncoding = getHeader(request->headers, "Accept-Encoding");
-    char *filePathPtr = response->pathToFile;
-    bool successfullyCompressed = compressFile(&filePathPtr, acceptEncoding);
+    if (fileTypeShouldBeCompressed(cfg, response->fileName)) {
+        const char *acceptEncoding = getHeader(request->headers, "Accept-Encoding");
+        char *filePathPtr = response->pathToFile;
+        bool successfullyCompressed = compressFile(&filePathPtr, acceptEncoding);
 
-    if (successfullyCompressed) {
-        response->encoding = CONTENT_ENCODING_GZIP;
-        printf("[+] Successfully compressed file: %s\n", response->pathToFile);
-    } else {
-        printf("[+] Serving uncompressed file: %s\n", response->pathToFile);
+        if (successfullyCompressed) {
+            response->encoding = CONTENT_ENCODING_GZIP;
+            printf("[+] Successfully compressed file: %s\n", response->pathToFile);
+        } else {
+            printf("[+] Serving uncompressed file: %s\n", response->pathToFile);
+        }
     }
 
     if (!fileExists(response->pathToFile)) {
