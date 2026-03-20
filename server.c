@@ -190,8 +190,10 @@ int main() {
 		if (clientfd > -1) {
 			if (close(clientfd) < 0) {
 				perror("[-] Failed to close client socket!");
+			} else {
+				clientfd = -1;
+				printf("[+] Closed client socket!\n");
 			}
-			printf("[+] Closed client socket!\n");
 		}
 	} while (keepRunning);
 
