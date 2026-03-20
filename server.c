@@ -41,6 +41,14 @@ void ctrlCHandler(int) {
 	keepRunning = false;
 }
 
+void setUpSignalHandler() {
+	struct sigaction action;
+	memset(&action, 0, sizeof(struct sigaction));
+	action.sa_handler = ctrlCHandler;
+	sigfillset(&action.sa_mask);
+	sigaction(SIGINT, &action, NULL);
+}
+
 int main() {
 	int status = EXIT_SUCCESS;
 	int serverfd = -1;
@@ -106,7 +114,7 @@ int main() {
 	CHECK(listen(serverfd, BACKLOG_LENGTH), "[-] Failed to set server socket to listen for connections");
 	printf("[+] Server socket is now listening for connections!\n");
 
-	signal(SIGINT, ctrlCHandler);
+	setUpSignalHandler();
 
 	do {
 		// Note: consider using accept4() on supporting platforms
