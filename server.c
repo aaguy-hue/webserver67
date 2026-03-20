@@ -7,6 +7,8 @@
 #include <string.h>
 #include <unistd.h>
 #include <time.h>
+#include <errno.h>
+#include <fcntl.h>
 #include <signal.h>
 
 #include "hashmap.h"
@@ -66,11 +68,13 @@ int main() {
 	CHECK(serverfd, "[-] Failed to create socket :((");
 	printf("[+] yay our server socket was created!!!\n");
 
+	CHECK(fcntl(serverfd, F_SETFL, O_NONBLOCK), "[-] Failed to set server socket to non-blocking mode");
+
 	int enable = true;
-	int opt1ok = setsockopt(serverfd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(enable));
-	// int opt2ok = setsockopt(serverfd, SOL_SOCKET, SO_REUSEPORT, &enable, sizeof(enable));
-	CHECK(opt1ok, "[-] Setting server socket option SO_REUSEADDR failed");
-	// CHECK(opt2ok, "[-] Setting server socket option SO_REUSEPORT failed");
+	CHECK(
+		setsockopt(serverfd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(enable)), 
+		"[-] Setting server socket option SO_REUSEADDR failed"
+	);
 	printf("[+] set server socket options!\n");
 
 	struct sockaddr_in server_addr_in;
@@ -108,7 +112,9 @@ int main() {
 		// Note: consider using accept4() on supporting platforms
 		struct sockaddr_in client_addr;
 		socklen_t addrsize = sizeof(client_addr);
-		clientfd = accept(serverfd, (struct sockaddr *)&client_addr, &addrsize);
+		do {
+			clientfd = accept(serverfd, (struct sockaddr *)&client_addr, &addrsize);
+		} while (clientfd < 0 && (errno == EWOULDBLOCK || errno == EAGAIN));
 		CHECK(clientfd, "[-] Failed to acccept client connection attempt");
 
 		char client_ip[INET_ADDRSTRLEN];

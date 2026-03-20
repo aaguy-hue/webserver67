@@ -19,8 +19,8 @@ only support HTTP/1.1 and earlier
 
 
 Things that need to be done:
-- Handle videos (very large files)
-  - Videos seem to cause the server to crash after sending a lot of chunks
+- Load request data as it is received, instead of first loading it into a Buffer
+  - No matter the size of our request buffer, it will fundamentally not work for large requests as long as we have that buffer limiting it
 - index.html file in each directory should matter
   - Right now we only process the top-level index.md file
 - Properly exit out of the program
