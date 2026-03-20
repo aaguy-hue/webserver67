@@ -33,7 +33,7 @@
 // rfs 9110 is the modern rfc defining the http spec
 static const int BACKLOG_LENGTH = 2;
 
-static volatile bool keepRunning = true;
+static volatile sig_atomic_t keepRunning = true;
 
 void ctrlCHandler(int) {
 	keepRunning = false;
@@ -135,7 +135,6 @@ int main() {
 				break;
 			}
 		}
-		if (!keepRunning) break;
 
 		char *bufptr = buf;
 
