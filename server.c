@@ -175,9 +175,13 @@ int main() {
 		printf("[+] Response generated!\n");
 
 
-		sendStatusLine(response, clientfd);
-		sendHeaders(response, clientfd);
-		sendBody(response, clientfd);
+		sendStatusLine(response, clientfd, &keepRunning);
+		sendHeaders(response, clientfd, &keepRunning);
+		sendBody(response, clientfd, &keepRunning);
+		if (!keepRunning) {
+			printf("\n[+] Caught SIGINT while sending response, shutting down server...\n");
+			break;
+		}
 		printf("Sent response!\n");
 
 		request->reset(request);

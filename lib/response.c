@@ -4,6 +4,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <signal.h>
 
 #include "fields.h"
 #include "fileutil.h"
@@ -88,10 +89,10 @@ void createHeaderLines(char **buf, struct hashmap *headers)
 	printf("[+] Finished processing headers. Final header lines buffer: \n%s\n", *buf);
 }
 
-void sendResponse(const void *buffer, size_t bufferSize, int clientfd) {
+void sendResponse(const void *buffer, size_t bufferSize, int clientfd, volatile sig_atomic_t *keepRunning) {
     ssize_t total = 0;
     long int bufferLen = (long int)bufferSize;
-    while (total < bufferLen) {
+    while (total < bufferLen && *keepRunning) {
         ssize_t sent = send(clientfd, (const uint8_t *)buffer + total, bufferLen - total, 0);
         if (sent == -1) {
             perror("[-] Failed to send response!");
@@ -105,29 +106,29 @@ void sendResponse(const void *buffer, size_t bufferSize, int clientfd) {
     printf("Sent response!\n");
 }
 
-void sendStatusLine(HttpResponse *response, int clientfd) {
+void sendStatusLine(HttpResponse *response, int clientfd, volatile sig_atomic_t *keepRunning) {
     char statusLineBuf[STATUS_LINE_MAXLEN];
     StatusLine *statusLine = response->statusLine;
     char *versionStr = getStrFromVersion(statusLine->version);
     memset(statusLineBuf, 0, STATUS_LINE_MAXLEN);
     snprintf(statusLineBuf, STATUS_LINE_MAXLEN-1, "%s %u %s\r\n",
              versionStr, statusLine->statusCode, statusLine->reasonPhrase);
-    sendResponse(statusLineBuf, strlen(statusLineBuf), clientfd);
+    sendResponse(statusLineBuf, strlen(statusLineBuf), clientfd, keepRunning);
 }
 
-void sendHeaders(HttpResponse *response, int clientfd) {
+void sendHeaders(HttpResponse *response, int clientfd, volatile sig_atomic_t *keepRunning) {
     char headerLines[HTTP_HEADER_LINES_MAXLEN];
     memset(headerLines, 0, HTTP_HEADER_LINES_MAXLEN);
     char *headerLinesPtr = headerLines;
     createHeaderLines(&headerLinesPtr, response->headers);
-    sendResponse(headerLines, strlen(headerLines), clientfd);
+    sendResponse(headerLines, strlen(headerLines), clientfd, keepRunning);
 }
 
 #define SEND_FILE_CHUNK_SIZE (1 << 14) // 16KB
 
-void sendBody(HttpResponse *response, int clientfd) {
+void sendBody(HttpResponse *response, int clientfd, volatile sig_atomic_t *keepRunning) {
     if (response->specialBodyUsed) {
-        sendResponse(response->specialBody, strlen(response->specialBody), clientfd);
+        sendResponse(response->specialBody, strlen(response->specialBody), clientfd, keepRunning);
         return;
     }
 
@@ -139,8 +140,8 @@ void sendBody(HttpResponse *response, int clientfd) {
 
     size_t bytesRead;
     uint8_t buffer[SEND_FILE_CHUNK_SIZE];
-    while ((bytesRead= fread(buffer, 1, SEND_FILE_CHUNK_SIZE, f)) > 0) {
-        sendResponse(buffer, bytesRead, clientfd);
+    while ((bytesRead= fread(buffer, 1, SEND_FILE_CHUNK_SIZE, f)) > 0 && *keepRunning) {
+        sendResponse(buffer, bytesRead, clientfd, keepRunning);
     }
     
     fclose(f);

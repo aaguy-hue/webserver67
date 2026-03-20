@@ -23,8 +23,6 @@ Things that need to be done:
   - No matter the size of our request buffer, it will fundamentally not work for large requests as long as we have that buffer limiting it
 - index.html file in each directory should matter
   - Right now we only process the top-level index.md file
-- Properly exit out of the program
-  - At the moment, ctrl+C doesn't do anything half the time, and the other half of the time it causes a segfault. There is no way for the program to exit cleanly
 - Chunked transfer coding
 
 

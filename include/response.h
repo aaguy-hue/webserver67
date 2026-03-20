@@ -2,6 +2,8 @@
 #define HTTP_RESPONSE_H
 
 #include <stddef.h>
+#include <stdbool.h>
+#include <signal.h>
 #include "startline.h"
 #include "request.h"
 #include "config.h"
@@ -42,9 +44,9 @@ HttpResponse *initializeResponse();
 void resetResponse(HttpResponse *response);
 void freeResponse(HttpResponse *response);
 
-void sendStatusLine(HttpResponse *response, int clientfd);
-void sendHeaders(HttpResponse *response, int clientfd);
-void sendBody(HttpResponse *response, int clientfd);
+void sendStatusLine(HttpResponse *response, int clientfd, volatile sig_atomic_t *keepRunning);
+void sendHeaders(HttpResponse *response, int clientfd, volatile sig_atomic_t *keepRunning);
+void sendBody(HttpResponse *response, int clientfd, volatile sig_atomic_t *keepRunning);
 
 void generateResponse(HttpResponse *response, HttpRequest *request, ServerConfig *cfg);
 
