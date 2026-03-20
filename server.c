@@ -114,7 +114,13 @@ int main() {
 		socklen_t addrsize = sizeof(client_addr);
 		do {
 			clientfd = accept(serverfd, (struct sockaddr *)&client_addr, &addrsize);
-		} while (clientfd < 0 && (errno == EWOULDBLOCK || errno == EAGAIN));
+		} while (clientfd < 0 && (errno == EWOULDBLOCK || errno == EAGAIN) && keepRunning);
+		
+		if (!keepRunning) {
+			printf("\n[+] Caught SIGINT, shutting down server...\n");
+			break;
+		}
+
 		CHECK(clientfd, "[-] Failed to acccept client connection attempt");
 
 		char client_ip[INET_ADDRSTRLEN];

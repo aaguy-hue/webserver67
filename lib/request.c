@@ -37,7 +37,7 @@ void setContent(HttpRequest *request, const char *content, unsigned int contentS
 void resetRequest(struct HttpRequest *request) {
     if (request->headers != NULL) {
         hashmap_free(request->headers);
-        // request->headers = NULL;
+        request->headers = NULL;
     }
     if (request->requestLine != NULL) {
         memset(request->requestLine, 0, sizeof(RequestLine));
