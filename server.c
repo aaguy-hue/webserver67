@@ -155,6 +155,10 @@ int main() {
 				break;
 			}
 		}
+		if (!keepRunning) {
+			printf("\n[+] Caught SIGINT while waiting for client data, shutting down server...\n");
+			break;
+		}
 
 		char *bufptr = buf;
 
