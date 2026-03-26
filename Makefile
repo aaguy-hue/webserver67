@@ -29,3 +29,6 @@ build/server.out: $(OBJ)
 
 clean:
 	rm -f $(ODIR)/*.o *~ core $(INCDIR)/*~ 
+
+install: build/server.out
+	cp build/server.out /usr/local/bin/ws67
