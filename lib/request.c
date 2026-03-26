@@ -45,6 +45,8 @@ void resetRequest(struct HttpRequest *request) {
     if (request->content != NULL) {
         memset(request->content, 0, request->contentSize);
     }
+
+
 }
 
 void freeRequest(HttpRequest *request) {
@@ -86,3 +88,5 @@ HttpRequest *initializeRequest() {
 
     return request;
 }
+
+

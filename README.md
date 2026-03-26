@@ -50,23 +50,10 @@ Command-line arguments override values from the selected config file:
 All command-line arguments are optional. If omitted, values are taken entirely from the config file.
 
 ### Examples
-Run using default config resolution:
 ```bash
 ws67
-```
-
-Specify a config file:
-```bash
-ws67 -c ./myconfig.yml
-```
-
-Override port and root directory:
-```bash
+ws67 -c ./myconfig.yml # the site root can be omitted and just use the config
 ws67 -p 8080 ./public
-```
-
-Use a config file but override the root directory:
-```bash
 ws67 -c ./config.yml ./site
 ```
 
@@ -88,10 +75,11 @@ All of these should present on most Linux distributions except LibCYAML.
   - Can serve many common filetypes used on the web
 - Directory browsing
 - Reads YAML config files
+  - Can receive overrides from command line arguments
 
 ## Planned Capabilities
-- Chunked transfer coding in responses for videos and other large files
-  - NOTE: There are no plans for receiving chunked transfer coding from clients
+- Read requests of unlimited size
+- Chunked transfer coding in responses (not requests)
 - Process more types of request headers
 - Reverse proxy
 - Allow subdirectories to have their own index.html files

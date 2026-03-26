@@ -1,10 +1,18 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdbool.h>
 #include <stdbool.h>
 #include <string.h>
 #include <cyaml/cyaml.h>
 #include "util.h"
 #include "config.h"
+#include "fileutil.h"
+
+struct cmdArgs {
+	char *configFilePath;
+	unsigned short int port;
+	char *siteRoot;
+};
 
 //char **matchKeyToPtr(char *key, struct _cfg_tmp *cfg) {
 //	trim(key);
@@ -58,7 +66,61 @@ static const cyaml_config_t parser_config = {
 	.log_level = CYAML_LOG_INFO
 };
 
-ServerConfig *readConfig(char *filePath) {
+static char *searchForConfigFile() {
+	const char *possiblePaths[] = {
+		"./config.yml",
+		"/etc/webserver67/config.yml",
+		NULL
+	};
+
+	for (int i = 0; possiblePaths[i] != NULL; i++) {
+		if (fileExists(possiblePaths[i])) {
+			printf("[+] Found config file at path: %s\n", possiblePaths[i]);
+			return strdup(possiblePaths[i]);
+		}
+	}
+
+	fprintf(stderr, "[-] Failed to find config file in any of the following paths:\n");
+	for (int i = 0; possiblePaths[i] != NULL; i++) {
+		fprintf(stderr, "    %s\n", possiblePaths[i]);
+	}
+	return NULL;
+}
+
+static struct cmdArgs parseCmdArgs(int argc, char *argv[]) {
+	struct cmdArgs args = {0};
+
+	for (int i = 1; i < argc; i++) {
+		if ((strcmp(argv[i], "--config") == 0 || strcmp(argv[i], "-c") == 0) && i + 1 < argc) {
+			args.configFilePath = argv[i + 1];
+			argv[i] = NULL;
+			argv[i + 1] = NULL;
+			i++;
+		} else if ((strcmp(argv[i], "--port") == 0 || strcmp(argv[i], "-p") == 0) && i + 1 < argc) {
+			if (strIsNumeric(argv[i + 1])) {
+				args.port = (unsigned short int)atoi(argv[i + 1]);
+			} else {
+				fprintf(stderr, "[-] Invalid port number provided in command line argument: %s\n", argv[i + 1]);
+			}
+			argv[i] = NULL;
+			argv[i + 1] = NULL;
+			i++;
+		} else if (argv[i][0] == '-') {
+			fprintf(stderr, "[-] Unrecognized command line argument: %s\n", argv[i]);
+		}
+	}
+
+	// Last positional argument is the site root
+	if (argc > 1 && argv[argc - 1] != NULL && argv[argc - 1][0] != '-') {
+		args.siteRoot = argv[argc - 1];
+		argv[argc - 1] = NULL;
+	}
+
+	return args;
+}
+
+// Will read configuration from a specific file
+static ServerConfig *readConfigFile(char *filePath) {
 	cyaml_err_t err;
 
 	// annoyingly, cyaml will allocate the thing for you
@@ -70,10 +132,12 @@ ServerConfig *readConfig(char *filePath) {
 	);
 	if (err != CYAML_OK) {
 		fprintf(stderr, "[-] Failed to parse config: %s\n", cyaml_strerror(err));
+		free(filePath);
 		return NULL;
 	}
 
 	// todo: I may or may not have to call cyaml_free()}
+	free(filePath);
 	return config;
 }
 
@@ -91,4 +155,38 @@ bool fileTypeShouldBeCompressed(ServerConfig *cfg, const char *fileName) {
 		}
 	}
 	return false;
+}
+
+
+// Eventually we will read configuration in the following order of precedence:
+// 1. Command line arguments
+// 2. config.yml in the current working directory
+// 3. /etc/webserver67/config.yml
+// For now we just do the highest priority file and then cmd line args
+ServerConfig *readConfig(int argc, char *argv[]) {
+	struct cmdArgs args = parseCmdArgs(argc, argv);
+
+	if (args.configFilePath == NULL) {
+		args.configFilePath = searchForConfigFile();
+		if (args.configFilePath == NULL) {
+			return NULL;
+		}
+	} else {
+		printf("[+] Using config file from command line argument: %s\n", args.configFilePath);
+	}
+	
+	ServerConfig *cfg = readConfigFile(args.configFilePath);
+	if (cfg == NULL) {
+		return NULL;
+	}
+
+	if (args.port != 0) {
+		cfg->port = args.port;
+	}
+	if (args.siteRoot != NULL) {
+		strncpy(cfg->site_root, args.siteRoot, SITE_PATH_MAX - 1);
+		cfg->site_root[SITE_PATH_MAX - 1] = '\0'; // ensure null termination
+	}
+
+	return cfg;
 }

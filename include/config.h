@@ -15,7 +15,7 @@ typedef struct ServerConfig {
   unsigned compressed_file_types_count;
 } ServerConfig;
 
-ServerConfig *readConfig(char *filePath);
+ServerConfig *readConfig(int argc, char *argv[]);
 
 bool fileTypeShouldBeCompressed(ServerConfig *cfg, const char *fileName);
 

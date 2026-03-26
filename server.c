@@ -49,7 +49,7 @@ void setUpSignalHandler() {
 	sigaction(SIGINT, &action, NULL);
 }
 
-int main() {
+int main(int argc, char *argv[]) {
 	int status = EXIT_SUCCESS;
 	int serverfd = -1;
 	int clientfd = -1;
@@ -65,7 +65,7 @@ int main() {
 
 	//ServerConfig *cfg = malloc(sizeof(ServerConfig));
 	//memset(cfg, 0, sizeof(ServerConfig));
-	ServerConfig *cfg = readConfig("./config.yml");
+	ServerConfig *cfg = readConfig(argc, argv);
 	if (cfg == NULL) {
 		status = EXIT_FAILURE;
 		goto cleanup;
