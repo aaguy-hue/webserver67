@@ -87,18 +87,34 @@ static char *searchForConfigFile() {
 	return NULL;
 }
 
-static struct cmdArgs parseCmdArgs(int argc, char *argv[]) {
-	struct cmdArgs args = {0};
+static struct cmdArgs *parseCmdArgs(int argc, char *argv[]) {
+	struct cmdArgs *args = malloc(sizeof(struct cmdArgs));
+	if (args == NULL) {
+		fprintf(stderr, "[-] Failed to allocate memory for command line arguments\n");
+		return NULL;
+	}
+	memset(args, 0, sizeof(struct cmdArgs));
 
 	for (int i = 1; i < argc; i++) {
 		if ((strcmp(argv[i], "--config") == 0 || strcmp(argv[i], "-c") == 0) && i + 1 < argc) {
-			args.configFilePath = strdup(argv[i + 1]);
+			if (argv[i+1][0] == '-') {
+				fprintf(stderr, "[-] Expected a file path after %s, but got another flag: %s\n", argv[i], argv[i + 1]);
+				free(args);
+				return NULL;
+			}
+			args->configFilePath = strdup(argv[i + 1]);
 			argv[i] = NULL;
 			argv[i + 1] = NULL;
 			i++;
 		} else if ((strcmp(argv[i], "--port") == 0 || strcmp(argv[i], "-p") == 0) && i + 1 < argc) {
+			if (argv[i+1][0] == '-') {
+				fprintf(stderr, "[-] Expected a port number after %s, but got another flag: %s\n", argv[i], argv[i + 1]);
+				free(args);
+				return NULL;
+			}
+
 			if (strIsNumeric(argv[i + 1])) {
-				args.port = (unsigned short int)atoi(argv[i + 1]);
+				args->port = (unsigned short int)atoi(argv[i + 1]);
 			} else {
 				fprintf(stderr, "[-] Invalid port number provided in command line argument: %s\n", argv[i + 1]);
 			}
@@ -112,7 +128,7 @@ static struct cmdArgs parseCmdArgs(int argc, char *argv[]) {
 
 	// Last positional argument is the site root
 	if (argc > 1 && argv[argc - 1] != NULL && argv[argc - 1][0] != '-') {
-		args.siteRoot = argv[argc - 1];
+		args->siteRoot = argv[argc - 1];
 		argv[argc - 1] = NULL;
 	}
 
@@ -162,27 +178,31 @@ bool fileTypeShouldBeCompressed(ServerConfig *cfg, const char *fileName) {
 // 3. /etc/webserver67/config.yml
 // For now we just do the highest priority file and then cmd line args
 ServerConfig *readConfig(int argc, char *argv[]) {
-	struct cmdArgs args = parseCmdArgs(argc, argv);
+	struct cmdArgs *args = parseCmdArgs(argc, argv);
+	if (args == NULL) {
+		return NULL;
+	}
 
-	if (args.configFilePath == NULL) {
-		args.configFilePath = searchForConfigFile();
-		if (args.configFilePath == NULL) {
+	if (args->configFilePath == NULL) {
+		args->configFilePath = searchForConfigFile();
+		if (args->configFilePath == NULL) {
+			free(args);
 			return NULL;
 		}
 	} else {
-		printf("[+] Using config file from command line argument: %s\n", args.configFilePath);
+		printf("[+] Using config file from command line argument: %s\n", args->configFilePath);
 	}
 	
-	ServerConfig *cfg = readConfigFile(args.configFilePath);
+	ServerConfig *cfg = readConfigFile(args->configFilePath);
 	if (cfg == NULL) {
 		return NULL;
 	}
 
-	if (args.port != 0) {
-		cfg->port = args.port;
+	if (args->port != 0) {
+		cfg->port = args->port;
 	}
-	if (args.siteRoot != NULL) {
-		strncpy(cfg->site_root, args.siteRoot, SITE_PATH_MAX - 1);
+	if (args->siteRoot != NULL) {
+		strncpy(cfg->site_root, args->siteRoot, SITE_PATH_MAX - 1);
 		cfg->site_root[SITE_PATH_MAX - 1] = '\0'; // ensure null termination
 	}
 	if (!fileExists(cfg->site_root)) { // fileExists works for dirs as well since it just does stat
