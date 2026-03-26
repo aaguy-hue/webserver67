@@ -32,5 +32,5 @@ clean:
 
 install: build/server.out
 	cp build/server.out /usr/local/bin/ws67
-	mkdir /etc/webserver67 2>/dev/null || true
-	cp config.yml /etc/webserver67/config.yml
+	mkdir -p /etc/webserver67
+	cp ./install/default_config.yml /etc/webserver67/config.yml

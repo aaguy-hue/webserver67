@@ -1,0 +1,13 @@
+port: 8080
+address: 127.0.0.1
+directory_browsing: true
+site_root: ./
+
+# Note: There is no point in compressing already compressed file types like .jpg, .mp4, .pdf, etc.
+# Most image and binary formats used on the web are already compressed, so compressing them might
+# actually make them larger (compression headers) and uses exra CPU resources
+compressed_file_types:
+  - .html
+  - .css
+  - .js
+  - .txt

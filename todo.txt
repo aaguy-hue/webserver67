@@ -21,6 +21,9 @@ only support HTTP/1.1 and earlier
 Things that need to be done:
 - Load request data as it is received, instead of first loading it into a Buffer
   - No matter the size of our request buffer, it will fundamentally not work for large requests as long as we have that buffer limiting it
+- Make all config.yml options optional, then give an error if any option is missing afterwards
+  - This allows for the creation of base-level config.yml files that require cmd line arguments to be used
+  - The default /etc/webserver67/config.yml file should NOT have a site_root
 - index.html file in each directory should matter
   - Right now we only process the top-level index.md file
 - Chunked transfer coding
