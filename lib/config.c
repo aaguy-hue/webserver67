@@ -92,7 +92,7 @@ static struct cmdArgs parseCmdArgs(int argc, char *argv[]) {
 
 	for (int i = 1; i < argc; i++) {
 		if ((strcmp(argv[i], "--config") == 0 || strcmp(argv[i], "-c") == 0) && i + 1 < argc) {
-			args.configFilePath = argv[i + 1];
+			args.configFilePath = strdup(argv[i + 1]);
 			argv[i] = NULL;
 			argv[i + 1] = NULL;
 			i++;
@@ -132,12 +132,10 @@ static ServerConfig *readConfigFile(char *filePath) {
 	);
 	if (err != CYAML_OK) {
 		fprintf(stderr, "[-] Failed to parse config: %s\n", cyaml_strerror(err));
-		free(filePath);
 		return NULL;
 	}
 
 	// todo: I may or may not have to call cyaml_free()}
-	free(filePath);
 	return config;
 }
 
@@ -186,6 +184,11 @@ ServerConfig *readConfig(int argc, char *argv[]) {
 	if (args.siteRoot != NULL) {
 		strncpy(cfg->site_root, args.siteRoot, SITE_PATH_MAX - 1);
 		cfg->site_root[SITE_PATH_MAX - 1] = '\0'; // ensure null termination
+	}
+	if (!fileExists(cfg->site_root)) { // fileExists works for dirs as well since it just does stat
+		fprintf(stderr, "[-] Site root directory specified in config does not exist: %s\n", cfg->site_root);
+		free(cfg);
+		return NULL;
 	}
 
 	return cfg;
