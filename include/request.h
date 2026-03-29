@@ -4,21 +4,35 @@
 
 #define CONTENT_MINLEN (1 << 12)
 
+#include <stdbool.h>
 #include "startline.h"
 
 typedef struct HttpRequest {
 	char *content;
 	unsigned int contentSize;
-
+	
 	RequestLine *requestLine;
 	struct hashmap *headers;
-
-	void (*setRequestLine) (struct HttpRequest *request, RequestLine requestLine);
-	void (*setContent) (struct HttpRequest *request, const char *content, unsigned int contentSize);
+	
 	void (*reset) (struct HttpRequest *request);
 	void (*free) (struct HttpRequest *request);
 } HttpRequest;
 
+typedef struct HttpRequestBuilder {
+	HttpRequest *request;
+
+	bool isRequestLineSet;
+	bool areHeadersSet;
+	bool isContentSet;
+
+	char *remainingBuf; // this is used to store the remaining buffer after parsing the request line and headers, so that it can be passed to the response generator for processing
+
+	void (*reset)(struct HttpRequestBuilder *builder);
+} HttpRequestBuilder;
+
 HttpRequest *initializeRequest();
+struct HttpRequestBuilder *initializeRequestBuilder(HttpRequest *request);
+
+void processRequestChunk(struct HttpRequestBuilder *requestBuilder, char *chunk, unsigned int chunkSize);
 
 #endif

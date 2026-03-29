@@ -48,10 +48,7 @@ struct hashmap *createFieldHashmap(size_t initial_capacity) {
 	return hashmap_new(sizeof(Field), initial_capacity, 0, 0, field_hash, field_compare, NULL, NULL);
 }
 
-struct hashmap *readRequest(char **buf) {
-	// 2nd param is initial capacity
-	struct hashmap *map = createFieldHashmap(20);
-
+void readHeaders(struct hashmap *map, char **buf) {
 	while (**buf)
 	{
 		size_t len = strcspn(*buf, "\n");
@@ -103,8 +100,6 @@ struct hashmap *readRequest(char **buf) {
 
 		(*buf) += len + 1;
 	}
-
-	return map;
 }
 
 const char *getHeader(struct hashmap *map, const char *header) {

@@ -56,6 +56,7 @@ int main(int argc, char *argv[]) {
 	
 	// allocate memory for the request and response objects
 	HttpRequest *request = initializeRequest();
+	HttpRequestBuilder *requestBuilder = initializeRequestBuilder(request);
 
 	HttpResponse *response = initializeResponse();
 	if (response == NULL || response->statusLine == NULL) {
@@ -144,6 +145,18 @@ int main(int argc, char *argv[]) {
 			n = recv(clientfd, buf, sizeof(buf)-1, MSG_CMSG_CLOEXEC | MSG_DONTWAIT);
 			if (n == -1) {
 				// no data received
+				if (errno == EWOULDBLOCK || errno == EAGAIN) {
+					// this just means there's no data to read right now, so we can continue waiting for data without treating it as an error
+					if (requestBuilder->isRequestLineSet && requestBuilder->areHeadersSet) {
+						printf("[+] No more data to read from client socket, assuming end of HTTP request\n");
+						break;
+					}
+					continue;
+				} else {
+					perror("[-] Failed to read data from client socket");
+					status = EXIT_FAILURE;
+					goto cleanup;
+				}
 			} else if (n == 0) {
 				// connection has been closed
 				printf("Client closed connection! Breaking...\n");
@@ -152,7 +165,9 @@ int main(int argc, char *argv[]) {
 				// n is the number of bytes read
 				printf("Read %d bytes!\nMessage: \n%s\n\n\n", n, buf);
 				buf[n] = '\0';
-				break;
+				
+				processRequestChunk(requestBuilder, buf, n);
+				printf("Processed segments: %d %d %d\n", requestBuilder->isRequestLineSet, requestBuilder->areHeadersSet, requestBuilder->isContentSet);
 			}
 		}
 		if (!keepRunning) {
@@ -160,27 +175,18 @@ int main(int argc, char *argv[]) {
 			break;
 		}
 
-		char *bufptr = buf;
-
-		RequestLine requestLine = getRequestLine(&bufptr);
-		if (requestLine.method == INVALID_METHOD || requestLine.version == INVALID_VERSION) {
+		if (requestBuilder->isRequestLineSet && requestBuilder->areHeadersSet) {
+			printf("[+] Finished reading HTTP request!\n");
+		} else {
+			printf("[-] Failed to read complete HTTP request, closing connection...\n");
 			status = EXIT_FAILURE;
 			goto cleanup;
 		}
 
-		request->setRequestLine(request, requestLine);
 		printf("[/] HTTP Method: %d\n", request->requestLine->method);
 		printf("[/] HTTP Target: %s\n", request->requestLine->target);
 		printf("[/] HTTP Version: %d\n", request->requestLine->version);
 
-		//printf("[/] Buffer first byte: %d\n", buf[0]);
-		struct hashmap *headers = readRequest(&bufptr);
-		request->headers = headers;
-
-		const char *contentLengthStr = popHeader(headers, "content-length");
-		int contentLength = contentLengthStr && strIsNumeric(contentLengthStr) ? atoi(contentLengthStr) : 0;
-
-		request->setContent(request, bufptr, contentLength);
 		printf("\nContent:\n%s\n", request->content);
 
 		generateResponse(response, request, cfg);
@@ -197,6 +203,7 @@ int main(int argc, char *argv[]) {
 		printf("Sent response!\n");
 
 		request->reset(request);
+		requestBuilder->reset(requestBuilder);
 		response->reset(response);
 
 		if (clientfd > -1) {
@@ -211,6 +218,7 @@ int main(int argc, char *argv[]) {
 
 cleanup:
 	free(cfg);
+	free(requestBuilder);
 	request->free(request);
 	freeResponse(response);
 	if (clientfd > -1) {

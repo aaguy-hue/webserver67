@@ -11,7 +11,7 @@ typedef struct {
         char value[FIELD_VALUE_MAXLEN];
 } Field;
 
-struct hashmap *readRequest(char **buf);
+void readHeaders(struct hashmap *map, char **buf);
 
 const char *getHeader(struct hashmap *map, const char *header);
 const char *popHeader(struct hashmap *map, const char *header);
