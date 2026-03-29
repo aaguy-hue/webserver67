@@ -14,4 +14,6 @@ bool strIsNumeric(const char *str);
 
 bool fileExtensionMatches(const char *fileName, const char *suffix);
 
+void prependStr(char *str, const char *prefix);
+
 #endif

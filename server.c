@@ -166,7 +166,7 @@ int main(int argc, char *argv[]) {
 				printf("Read %d bytes!\nMessage: \n%s\n\n\n", n, buf);
 				buf[n] = '\0';
 				
-				processRequestChunk(requestBuilder, buf, n);
+				while (processRequestChunk(requestBuilder, buf, n));
 				printf("Processed segments: %d %d %d\n", requestBuilder->isRequestLineSet, requestBuilder->areHeadersSet, requestBuilder->isContentSet);
 			}
 		}

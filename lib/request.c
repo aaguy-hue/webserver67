@@ -114,11 +114,15 @@ struct HttpRequestBuilder *initializeRequestBuilder(HttpRequest *request) {
     return builder;
 }
 
-void processRequestChunk(struct HttpRequestBuilder *requestBuilder, char *chunk, unsigned int chunkSize) {
-    strncat(requestBuilder->remainingBuf ? requestBuilder->remainingBuf : "", chunk, chunkSize);
+bool processRequestChunk(struct HttpRequestBuilder *requestBuilder, char *chunk, unsigned int chunkSize) {
+    printf("[+] Processing request chunk of size %d\n", chunkSize);
+
+    prependStr(chunk, requestBuilder->remainingBuf ? requestBuilder->remainingBuf : "");
     requestBuilder->remainingBuf = NULL; // reset the buf
+    printf("[+] Current request content after appending chunk:\n%s\n", requestBuilder->request->content);
 
     if (!requestBuilder->isRequestLineSet) {
+        printf("[+] Parsing request line from chunk...\n");
         // for simplicity, we assume the request line will always be in the first chunk, which should be the case for most requests since the request line is usually very small
         RequestLine requestLine = getRequestLine((char**)&chunk);
         if (requestLine.method == INVALID_METHOD || requestLine.version == INVALID_VERSION) {
@@ -129,7 +133,9 @@ void processRequestChunk(struct HttpRequestBuilder *requestBuilder, char *chunk,
         setRequestLine(requestBuilder->request, requestLine);
         requestBuilder->remainingBuf = chunk;
         requestBuilder->isRequestLineSet = true;
+        printf("[+] Parsed request line: method=%d, target=%s, version=%d\n", requestLine.method, requestLine.target, requestLine.version);
     } else if (!requestBuilder->areHeadersSet) {
+        printf("[+] Parsing headers from chunk...\n");
         // note: the headers section always ends in a blank line (i.e., two consecutive newlines), so we can use that to determine when we've reached the end of the headers section
         // http uses crlf for newlines always, but advises to support for lf just in case
         // we add a \0 at the end of the two newlines to separate the headers section from the content section, so that we can easily parse the headers without worrying about the content, which we'll process in the next chunk
@@ -158,6 +164,7 @@ void processRequestChunk(struct HttpRequestBuilder *requestBuilder, char *chunk,
         // btw the reason I don't add strlen(chunk) is bc readHeaders moves the ptr as it reads the headers
         if (requestBuilder->remainingBuf == NULL) requestBuilder->remainingBuf = chunk + 1;
     } else if (!requestBuilder->isContentSet) {
+        printf("[+] Processing content from chunk...\n");
         // first time we read content section
         const char *contentLengthStr = popHeader(requestBuilder->request->headers, "content-length");
 		int contentLength = contentLengthStr && strIsNumeric(contentLengthStr) ? atoi(contentLengthStr) : 0;
@@ -168,5 +175,7 @@ void processRequestChunk(struct HttpRequestBuilder *requestBuilder, char *chunk,
         // this means we've already processed the request line and headers, so we just need to append the content
         strncat(requestBuilder->request->content, chunk, chunkSize);
     }
+
+    return requestBuilder->remainingBuf != NULL && strlen(requestBuilder->remainingBuf) > 0; // this means we need to call the method again
 }
 

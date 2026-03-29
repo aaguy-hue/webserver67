@@ -74,3 +74,9 @@ bool fileExtensionMatches(const char *fileName, const char *suffix) {
     }
     return strcmp(fileName, suffix) == 0;
 }
+
+void prependStr(char *str, const char *prefix) {
+    size_t prefixLen = strlen(prefix);
+    memmove(str + prefixLen, str, strlen(str) + 1); // +1 to move the null terminator as well
+    memcpy(str, prefix, prefixLen);
+}

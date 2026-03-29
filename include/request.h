@@ -33,6 +33,6 @@ typedef struct HttpRequestBuilder {
 HttpRequest *initializeRequest();
 struct HttpRequestBuilder *initializeRequestBuilder(HttpRequest *request);
 
-void processRequestChunk(struct HttpRequestBuilder *requestBuilder, char *chunk, unsigned int chunkSize);
+bool processRequestChunk(struct HttpRequestBuilder *requestBuilder, char *chunk, unsigned int chunkSize);
 
 #endif
