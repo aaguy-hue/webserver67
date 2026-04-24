@@ -6,6 +6,21 @@
 #include "hashmap.h"
 #include "util.h"
 
+static void setRemainingBuffer(struct HttpRequestBuilder *builder, const char *src, size_t len) {
+    char *newBuf = realloc(builder->remainingBuf, len + 1);
+    if (newBuf == NULL) {
+        printf("[-] Failed to allocate memory for request builder remaining buffer");
+        builder->request->free(builder->request);
+        exit(EXIT_FAILURE);
+    }
+
+    builder->remainingBuf = newBuf;
+    if (len > 0 && src != NULL) {
+        memcpy(builder->remainingBuf, src, len);
+    }
+    builder->remainingBuf[len] = '\0';
+}
+
 void setRequestLine(HttpRequest *request, RequestLine requestLine) {
     if (request->requestLine == NULL) {
         request->requestLine = malloc(sizeof(RequestLine));
@@ -93,6 +108,9 @@ void resetRequestBuilder(struct HttpRequestBuilder *builder) {
     builder->isRequestLineSet = false;
     builder->areHeadersSet = false;
     builder->isContentSet = false;
+	if (builder->remainingBuf != NULL) {
+		free(builder->remainingBuf);
+	}
     builder->remainingBuf = NULL;
     builder->request->reset(builder->request);
 }
@@ -115,11 +133,13 @@ struct HttpRequestBuilder *initializeRequestBuilder(HttpRequest *request) {
 }
 
 bool processRequestChunk(struct HttpRequestBuilder *requestBuilder, char *chunk, unsigned int chunkSize) {
-    printf("[+] Processing request chunk of size %d\n", chunkSize);
-
-    prependStr(chunk, requestBuilder->remainingBuf ? requestBuilder->remainingBuf : "");
-    requestBuilder->remainingBuf = NULL; // reset the buf
-    printf("[+] Current request content after appending chunk:\n%s\n", requestBuilder->request->content);
+    printf("Remaining buffer before appending chunk:\n%s\n", requestBuilder->remainingBuf ? requestBuilder->remainingBuf : "(null)");
+    if (requestBuilder->remainingBuf != NULL) {
+        prependStr(chunk, requestBuilder->remainingBuf);
+        free(requestBuilder->remainingBuf);
+        requestBuilder->remainingBuf = NULL;
+    }
+    // printf("[+] Current request chunk after appending chunk:\n%s\n", chunk);
 
     if (!requestBuilder->isRequestLineSet) {
         printf("[+] Parsing request line from chunk...\n");
@@ -130,8 +150,11 @@ bool processRequestChunk(struct HttpRequestBuilder *requestBuilder, char *chunk,
             requestBuilder->request->free(requestBuilder->request);
             exit(EXIT_FAILURE);
         }
+        printf("[+] Parsed request line: method=%d, target=%s, version=%d\n", requestLine.method, requestLine.target, requestLine.version);
         setRequestLine(requestBuilder->request, requestLine);
-        requestBuilder->remainingBuf = chunk;
+        printf("Remaining buffer after parsing request line:\n%s\n", chunk);
+        setRemainingBuffer(requestBuilder, chunk, strnlen(chunk, chunkSize));
+        printf("Remaining buffer after saving remaining chunk:\n%s\n", requestBuilder->remainingBuf);
         requestBuilder->isRequestLineSet = true;
         printf("[+] Parsed request line: method=%d, target=%s, version=%d\n", requestLine.method, requestLine.target, requestLine.version);
     } else if (!requestBuilder->areHeadersSet) {
@@ -143,15 +166,20 @@ bool processRequestChunk(struct HttpRequestBuilder *requestBuilder, char *chunk,
         char *crlf = strstr(chunk, "\r\n\r\n");
         char *lf = strstr(chunk, "\n\n");
         if (crlf != NULL) {
-            requestBuilder->remainingBuf = crlf + 4; // move to content
+            printf("[+] Detected CRLF newlines, using CRLF as header/content separator\n");
+            setRemainingBuffer(requestBuilder, crlf + 4, chunkSize - (unsigned int)(crlf - chunk) - 4); // move to content, also make sure to not read out of bounds of the chunk
             *crlf = '\0'; // don't start reading content
             requestBuilder->areHeadersSet = true;
         } else if (lf != NULL) {
-            requestBuilder->remainingBuf = lf + 2; // same as above
+            printf("[+] Detected LF newlines, using LF as header/content separator\n");
+            setRemainingBuffer(requestBuilder, lf + 2, chunkSize - (unsigned int)(lf - chunk) - 2); // same as above
             *lf = '\0';
             requestBuilder->areHeadersSet = true;
         } else {
-            strrchr(chunk, '\n')[0] = '\0';
+            char *lastLf = strrchr(chunk, '\n');
+            if (lastLf != NULL) {
+                *lastLf = '\0';
+            }
         }
 
         if (requestBuilder->request->headers == NULL) {
@@ -162,7 +190,9 @@ bool processRequestChunk(struct HttpRequestBuilder *requestBuilder, char *chunk,
 
         // save the last part of the chunk that contains the start of the next line of headers, to be used when reading the next chunk
         // btw the reason I don't add strlen(chunk) is bc readHeaders moves the ptr as it reads the headers
-        if (requestBuilder->remainingBuf == NULL) requestBuilder->remainingBuf = chunk + 1;
+        if (requestBuilder->remainingBuf == NULL) {
+            setRemainingBuffer(requestBuilder, chunk + 1, strnlen(chunk + 1, chunkSize));
+        }
     } else if (!requestBuilder->isContentSet) {
         printf("[+] Processing content from chunk...\n");
         // first time we read content section

@@ -109,7 +109,7 @@ int main(int argc, char *argv[]) {
 	CHECK(bind(serverfd, server_addr, addrlen), errorstr);
 
 	char successtr[100];
-	snprintf(successtr, sizeof(successtr), "[+] succesfully bound server socket to %s:%d\n", cfg->address, cfg->port);
+	snprintf(successtr, sizeof(successtr), "[+] succesfully bound server socket to http://%s:%d\n", cfg->address, cfg->port);
 	printf(successtr);
 
 	CHECK(listen(serverfd, BACKLOG_LENGTH), "[-] Failed to set server socket to listen for connections");
@@ -166,7 +166,12 @@ int main(int argc, char *argv[]) {
 				printf("Read %d bytes!\nMessage: \n%s\n\n\n", n, buf);
 				buf[n] = '\0';
 				
-				while (processRequestChunk(requestBuilder, buf, n));
+				bool continueProcessing = processRequestChunk(requestBuilder, buf, n);
+				(void) continueProcessing;
+				// while (continueProcessing) {
+				// 	memset(buf, 0, sizeof(buf)); // processrequestchunk will set this to remainingBuf, which is however much is yet to be processed, so we need to clear it before passing it back in
+				// 	continueProcessing = processRequestChunk(requestBuilder, buf, n);
+				// }
 				printf("Processed segments: %d %d %d\n", requestBuilder->isRequestLineSet, requestBuilder->areHeadersSet, requestBuilder->isContentSet);
 			}
 		}
