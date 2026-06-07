@@ -167,12 +167,14 @@ int main(int argc, char *argv[]) {
 				buf[n] = '\0';
 				
 				bool continueProcessing = processRequestChunk(requestBuilder, buf, n);
-				(void) continueProcessing;
-				// while (continueProcessing) {
-				// 	memset(buf, 0, sizeof(buf)); // processrequestchunk will set this to remainingBuf, which is however much is yet to be processed, so we need to clear it before passing it back in
-				// 	continueProcessing = processRequestChunk(requestBuilder, buf, n);
-				// }
+				// (void) continueProcessing;
 				printf("Processed segments: %d %d %d\n", requestBuilder->isRequestLineSet, requestBuilder->areHeadersSet, requestBuilder->isContentSet);
+				
+				while (continueProcessing) {
+					memset(buf, 0, sizeof(buf)); // processrequestchunk will set this to remainingBuf, which is however much is yet to be processed, so we need to clear it before passing it back in
+					continueProcessing = processRequestChunk(requestBuilder, buf, n);
+					printf("Processed segments: %d %d %d\n", requestBuilder->isRequestLineSet, requestBuilder->areHeadersSet, requestBuilder->isContentSet);
+				}
 			}
 		}
 		if (!keepRunning) {

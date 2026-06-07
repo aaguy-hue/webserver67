@@ -27,11 +27,13 @@ Things that need to be done:
 - index.html file in each directory should matter
   - Right now we only process the top-level index.md file
 - Chunked transfer coding
+- If you switch to another page before the connection closes, then you can have a crash. This is most apparent in the example when viewing the video and then switching to the index page.
 
 
 Possible ideas:
 - Subdirectories can have 404.html files
   - Basically the 404.html that's the closest in the file tree to yours would be used (ex: if someone goes to root/subdir/subdir/doesntexist.html, we'll check for root/subdir/subdir/404.html, then root/subdir/404.html, then root/404.html)
+- Save compressed files to /tmp dir (or whatever equivalent on the system)
 
 
 
